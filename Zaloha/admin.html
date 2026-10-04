@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="cs" data-page="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VetCare - Administrační centrum</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="themes.css">
+    <script src="theme.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Navigační lišta -->
+    <nav class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-hospital-user text-emerald-400 text-2xl"></i>
+            <span class="font-bold text-xl tracking-wide">VET-CARE | Správa firmy</span>
+        </div>
+        <button onclick="logout()" class="px-3 py-1.5 bg-red-600/80 hover:bg-red-600 rounded-lg text-xs font-bold transition">
+            <i class="fa-solid fa-right-from-bracket mr-1"></i> Odhlásit
+        </button>
+    </nav>
+
+    <!-- Záložky v pořadí: 1. Ordinace, 2. Lékaři, 3. Uživatelé -->
+    <div class="bg-slate-800/50 border-b border-slate-700 px-6 pt-3 flex space-x-2">
+        <button onclick="switchTab('ordinace')" id="tab-ordinace" class="tab-btn px-4 py-2.5 text-xs font-bold rounded-t-xl transition bg-emerald-600 text-white">
+            <i class="fa-solid fa-hospital mr-1.5"></i> 1. Ordinace
+        </button>
+        <button onclick="switchTab('lekari')" id="tab-lekari" class="tab-btn px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-white rounded-t-xl transition">
+            <i class="fa-solid fa-user-doctor mr-1.5"></i> 2. Lékaři
+        </button>
+        <button onclick="switchTab('uzivatele')" id="tab-uzivatele" class="tab-btn px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-white rounded-t-xl transition">
+            <i class="fa-solid fa-users mr-1.5"></i> 3. Uživatelé
+        </button>
+    </div>
+
+    <!-- Hlavní obsah -->
+    <main class="flex-grow p-6 max-w-7xl w-full mx-auto space-y-6">
+
+        <!-- ========================================== -->
+        <!-- ZÁLOŽKA 1: ORDINACE                        -->
+        <!-- ========================================== -->
+        <section id="sec-ordinace" class="space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold text-emerald-400"><i class="fa-solid fa-hospital mr-2"></i>Seznam ordinací Vaší firmy</h2>
+                <button onclick="openNewOrdinaceModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 font-bold text-xs rounded-xl transition">
+                    + Přidat novou ordinaci
+                </button>
+            </div>
+
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-xl">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-900 border-b border-slate-700 text-slate-400 uppercase">
+                        <tr>
+                            <th class="p-3">Název</th>
+                            <th class="p-3">Adresa</th>
+                            <th class="p-3">Telefon</th>
+                            <th class="p-3">Email</th>
+                            <th class="p-3 text-right">Vnořený detail / Editace</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbl-ordinace" class="divide-y divide-slate-700 font-mono">
+                        <tr><td colspan="5" class="p-4 text-center text-slate-500">Načítání...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- ZÁLOŽKA 2: LÉKAŘI                          -->
+        <!-- ========================================== -->
+        <section id="sec-lekari" class="space-y-6 hidden">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold text-emerald-400"><i class="fa-solid fa-user-doctor mr-2"></i>Lékaři firmy (Uzivatele + Lekari)</h2>
+            </div>
+
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-xl">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-900 border-b border-slate-700 text-slate-400 uppercase">
+                        <tr>
+                            <th class="p-3">Lékař</th>
+                            <th class="p-3">Kontakt</th>
+                            <th class="p-3">Titul / Spec.</th>
+                            <th class="p-3">Přiřazené Ordinace</th>
+                            <th class="p-3 text-right">Vnořený detail / Editace</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbl-lekari" class="divide-y divide-slate-700 font-mono">
+                        <tr><td colspan="5" class="p-4 text-center text-slate-500">Načítání...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- ZÁLOŽKA 3: UŽIVATELÉ                       -->
+        <!-- ========================================== -->
+        <section id="sec-uzivatele" class="space-y-6 hidden">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold text-emerald-400"><i class="fa-solid fa-users mr-2"></i>Uživatelé firmy (PreferovanaOrdinaceId = FirmaId)</h2>
+            </div>
+
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-xl">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-900 border-b border-slate-700 text-slate-400 uppercase">
+                        <tr>
+                            <th class="p-3">ID / Jméno</th>
+                            <th class="p-3">Email</th>
+                            <th class="p-3">Telefon</th>
+                            <th class="p-3">Role</th>
+                            <th class="p-3 text-right">Vnořený detail</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbl-uzivatele" class="divide-y divide-slate-700 font-mono">
+                        <tr><td colspan="5" class="p-4 text-center text-slate-500">Načítání...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODÁL PRO NOVOU ORDINACI -->
+    <div id="modal-ordinace-new" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-slate-800 border border-slate-700 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
+            <h3 class="text-md font-bold text-emerald-400">Přidat novou ordinaci</h3>
+            <form onsubmit="createNewOrdinace(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-400 mb-1">Název ordinace</label>
+                    <input type="text" id="new-ord-nazev" required class="w-full p-2 bg-slate-900 border border-slate-700 rounded-xl">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-400 mb-1">Adresa</label>
+                    <input type="text" id="new-ord-adresa" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-xl">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-400 mb-1">Telefon</label>
+                    <input type="text" id="new-ord-telefon" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-xl">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-400 mb-1">Email</label>
+                    <input type="email" id="new-ord-email" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-xl">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeNewOrdinaceModal()" class="px-3 py-1.5 bg-slate-700 rounded-lg font-bold">Zrušit</button>
+                    <button type="submit" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-bold text-white">Vytvořit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODÁL PRO NOVÝ ÚKON ORDINACE -->
+    <div id="modal-ukon-new" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-slate-800 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+            <h3 class="text-md font-bold text-emerald-400">Přidat nový typ úkonu pro ordinaci</h3>
+            <form onsubmit="createNewUkon(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="new-ukon-ordinace-id">
+                <div>
+                    <label class="block font-bold text-slate-400 mb-1">Název úkonu</label>
+                    <input type="text" id="new-ukon-nazev" required class="w-full p-2 bg-slate-900 border border-slate-700 rounded-xl">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-400 mb-1">Délka (v minutách)</label>
+                    <input type="number" id="new-ukon-delka" value="15" required class="w-full p-2 bg-slate-900 border border-slate-700 rounded-xl">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-400 mb-1">Cena (Kč)</label>
+                    <input type="number" step="0.01" id="new-ukon-cena" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-xl">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeNewUkonModal()" class="px-3 py-1.5 bg-slate-700 rounded-lg font-bold">Zrušit</button>
+                    <button type="submit" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-bold text-white">Vytvořit úkon</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('vetcare_token');
+        if (!token) window.location.href = 'index.html';
+
+        let cachedOrdinace = [];
+        let cachedUkony = [];
+        let currentLekariData = [];
+
+        // Přepínání záložek
+        function switchTab(tabName) {
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('bg-emerald-600', 'text-white');
+                b.classList.add('text-slate-400');
+            });
+
+            document.getElementById(`sec-${tabName}`).classList.remove('hidden');
+            const btn = document.getElementById(`tab-${tabName}`);
+            btn.classList.add('bg-emerald-600', 'text-white');
+            btn.classList.remove('text-slate-400');
+
+            if (tabName === 'ordinace') loadOrdinace();
+            if (tabName === 'lekari') loadLekari();
+            if (tabName === 'uzivatele') loadUzivatele();
+        }
+
+        // ==========================================
+        // 1. ORDINACE (A VNOŘENÉ TYPY ÚKONŮ)
+        // ==========================================
+        async function loadOrdinace(openRowId = null) {
+            try {
+                const [resOrd, resUkon] = await Promise.all([
+                    fetch('/api/admin/ordinace', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/admin/typy-ukonu', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+
+                cachedOrdinace = await resOrd.json();
+                cachedUkony = await resUkon.json();
+
+                const tbody = document.getElementById('tbl-ordinace');
+                let html = '';
+
+                cachedOrdinace.forEach(o => {
+                    // Filtrování úkonů patřících k této ordinaci
+                    const ordUkony = cachedUkony.filter(u => u.OrdinaceId === o.Id || u.ordinaceId === o.Id);
+
+                    html += `
+                        <tr class="hover:bg-slate-750/50">
+                            <td class="p-3 font-bold text-emerald-300">${o.Nazev}</td>
+                            <td class="p-3 text-slate-400">${o.Adresa || '-'}</td>
+                            <td class="p-3">${o.Telefon || '-'}</td>
+                            <td class="p-3">${o.Email || '-'}</td>
+                            <td class="p-3 text-right space-x-1">
+                                <button onclick="toggleOrdinaceNestedRow(${o.Id})" class="px-2.5 py-1 bg-amber-500/20 text-amber-300 font-bold rounded hover:bg-amber-500/40">
+                                    <i class="fa-solid fa-chevron-down mr-1"></i> Detail / Editace
+                                </button>
+                                <button onclick="deleteOrdinace(${o.Id})" class="p-1.5 bg-red-500/20 text-red-300 hover:bg-red-500/40 rounded">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <!-- VNOŘENÁ TABULKA / DETAIL ORDINACE -->
+                        <tr id="ord-nested-${o.Id}" class="hidden bg-slate-950/80">
+                            <td colspan="5" class="p-4">
+                                <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 space-y-4">
+                                    <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider">Detail a editace ordinace #${o.Id}</h4>
+                                    
+                                    <!-- 1. Základní informace o ordinaci -->
+                                    <div class="space-y-2">
+                                        <span class="font-bold text-slate-300 uppercase text-[11px] block border-b border-slate-700 pb-1">Základní informace</span>
+                                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                                            <div>
+                                                <label class="block font-bold text-slate-400 mb-1">Název ordinace</label>
+                                                <input type="text" id="ord-edit-nazev-${o.Id}" value="${o.Nazev}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg">
+                                            </div>
+                                            <div>
+                                                <label class="block font-bold text-slate-400 mb-1">Adresa</label>
+                                                <input type="text" id="ord-edit-adresa-${o.Id}" value="${o.Adresa || ''}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg">
+                                            </div>
+                                            <div>
+                                                <label class="block font-bold text-slate-400 mb-1">Telefon</label>
+                                                <input type="text" id="ord-edit-telefon-${o.Id}" value="${o.Telefon || ''}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg">
+                                            </div>
+                                            <div>
+                                                <label class="block font-bold text-slate-400 mb-1">Email</label>
+                                                <input type="email" id="ord-edit-email-${o.Id}" value="${o.Email || ''}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 2. Typy úkonů ordinace z tabulky TypyUkonu -->
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between items-center border-b border-slate-700 pb-1">
+                                            <span class="font-bold text-slate-300 uppercase text-[11px]"><i class="fa-solid fa-notes-medical text-emerald-400 mr-1"></i> Typy úkonů pro tuto ordinaci</span>
+                                            <button type="button" onclick="openNewUkonForOrdinaceModal(${o.Id})" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 rounded text-[10px] font-bold text-white">
+                                                + Nový typ úkonu
+                                            </button>
+                                        </div>
+
+                                        <div class="overflow-x-auto">
+                                            <table class="w-full text-left text-xs bg-slate-900 rounded-lg border border-slate-700">
+                                                <thead class="bg-slate-950 text-slate-400 uppercase text-[10px]">
+                                                    <tr>
+                                                        <th class="p-2">Název úkonu</th>
+                                                        <th class="p-2 w-28">Délka (min)</th>
+                                                        <th class="p-2 w-32">Cena (Kč)</th>
+                                                        <th class="p-2 text-right w-36">Akce</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-slate-800 font-mono">
+                                                    ${ordUkony.length > 0 ? ordUkony.map(u => `
+                                                        <tr>
+                                                            <td class="p-2">
+                                                                <input type="text" id="ukon-nazev-${u.Id}" value="${u.Nazev}" class="w-full p-1.5 bg-slate-800 border border-slate-700 rounded text-xs">
+                                                            </td>
+                                                            <td class="p-2">
+                                                                <input type="number" id="ukon-delka-${u.Id}" value="${u.DelkaMinuty}" class="w-full p-1.5 bg-slate-800 border border-slate-700 rounded text-xs">
+                                                            </td>
+                                                            <td class="p-2">
+                                                                <input type="number" step="0.01" id="ukon-cena-${u.Id}" value="${u.Cena || ''}" class="w-full p-1.5 bg-slate-800 border border-slate-700 rounded text-xs">
+                                                            </td>
+                                                            <td class="p-2 text-right space-x-1">
+                                                                <button onclick="saveNestedUkon(${u.Id},${o.Id})" class="px-2 py-1 bg-emerald-600/30 text-emerald-300 hover:bg-emerald-600/50 rounded font-bold text-[11px]" title="Uložit úkon">
+                                                                    <i class="fa-solid fa-floppy-disk mr-1"></i> Uložit
+                                                                </button>
+                                                                <button onclick="deleteUkon(${u.Id},${o.Id})" class="p-1 bg-red-600/30 text-red-300 hover:bg-red-600/50 rounded" title="Smazat úkon">
+                                                                    <i class="fa-solid fa-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    `).join('') : `
+                                                        <tr>
+                                                            <td colspan="4" class="p-3 text-center text-slate-500 italic font-sans">Žádné typy úkonů pro tuto ordinaci.</td>
+                                                        </tr>
+                                                    `}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-end space-x-2 pt-2 border-t border-slate-700">
+                                        <button onclick="toggleOrdinaceNestedRow(${o.Id})" class="px-3 py-1 bg-slate-700 rounded font-bold text-xs">Zavřít</button>
+                                        <button onclick="saveNestedOrdinace(${o.Id})" class="px-4 py-1 bg-emerald-600 hover:bg-emerald-500 rounded font-bold text-xs text-white">Uložit ordinaci</button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+
+                // Zachová otevřený detail ordinace po uložení / úpravě
+                if (openRowId) {
+                    const targetRow = document.getElementById(`ord-nested-${openRowId}`);
+                    if (targetRow) targetRow.classList.remove('hidden');
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function toggleOrdinaceNestedRow(id) {
+            document.getElementById(`ord-nested-${id}`).classList.toggle('hidden');
+        }
+
+        async function saveNestedOrdinace(id) {
+            const payload = {
+                nazev: document.getElementById(`ord-edit-nazev-${id}`).value,
+                adresa: document.getElementById(`ord-edit-adresa-${id}`).value,
+                telefon: document.getElementById(`ord-edit-telefon-${id}`).value,
+                email: document.getElementById(`ord-edit-email-${id}`).value,
+            };
+
+            const res = await fetch(`/api/admin/ordinace/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) loadOrdinace(id);
+        }
+
+        async function deleteOrdinace(id) {
+            if (!confirm('Opravdu smazat tuto ordinaci?')) return;
+            await fetch(`/api/admin/ordinace/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            loadOrdinace();
+        }
+
+        function openNewOrdinaceModal() { document.getElementById('modal-ordinace-new').classList.remove('hidden'); }
+        function closeNewOrdinaceModal() { document.getElementById('modal-ordinace-new').classList.add('hidden'); }
+
+        async function createNewOrdinace(e) {
+            e.preventDefault();
+            const payload = {
+                nazev: document.getElementById('new-ord-nazev').value,
+                adresa: document.getElementById('new-ord-adresa').value,
+                telefon: document.getElementById('new-ord-telefon').value,
+                email: document.getElementById('new-ord-email').value,
+            };
+
+            const res = await fetch('/api/admin/ordinace', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                closeNewOrdinaceModal();
+                loadOrdinace();
+            }
+        }
+
+        // --- Správa úkonů přímo z vnořeného detailu ordinace ---
+        async function saveNestedUkon(id, ordinaceId) {
+            const payload = {
+                nazev: document.getElementById(`ukon-nazev-${id}`).value,
+                delkaMinuty: parseInt(document.getElementById(`ukon-delka-${id}`).value),
+                cena: document.getElementById(`ukon-cena-${id}`).value ? parseFloat(document.getElementById(`ukon-cena-${id}`).value) : null,
+                ordinaceId: ordinaceId
+            };
+
+            const res = await fetch(`/api/admin/typy-ukonu/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) loadOrdinace(ordinaceId);
+        }
+
+        async function deleteUkon(id, ordinaceId) {
+            if (!confirm('Opravdu smazat tento typ úkonu?')) return;
+
+            const res = await fetch(`/api/admin/typy-ukonu/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) 
+            {
+                alert('Úkon byl smazán.');
+                loadOrdinace(ordinaceId);
+            }
+            else{
+                alert('Nepodařilo se smazat úkon. Tento úkon je pravděpodobně přiřazen k nějakému záznamu.');
+           }
+        }
+
+        function openNewUkonForOrdinaceModal(ordinaceId) {
+            document.getElementById('new-ukon-ordinace-id').value = ordinaceId;
+            document.getElementById('new-ukon-nazev').value = '';
+            document.getElementById('new-ukon-delka').value = '15';
+            document.getElementById('new-ukon-cena').value = '';
+            document.getElementById('modal-ukon-new').classList.remove('hidden');
+        }
+
+        function closeNewUkonModal() { document.getElementById('modal-ukon-new').classList.add('hidden'); }
+
+        async function createNewUkon(e) {
+            e.preventDefault();
+            const ordId = parseInt(document.getElementById('new-ukon-ordinace-id').value);
+            const payload = {
+                nazev: document.getElementById('new-ukon-nazev').value,
+                delkaMinuty: parseInt(document.getElementById('new-ukon-delka').value),
+                cena: document.getElementById('new-ukon-cena').value ? parseFloat(document.getElementById('new-ukon-cena').value) : null,
+                ordinaceId: ordId
+            };
+
+            const res = await fetch('/api/admin/typy-ukonu', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                closeNewUkonModal();
+                loadOrdinace(ordId);
+            }
+        }
+
+        // ==========================================
+        // 2. LÉKAŘI
+        // ==========================================
+        async function loadLekari() {
+            if (cachedOrdinace.length === 0) {
+                const resOrd = await fetch('/api/admin/ordinace', { headers: { 'Authorization': `Bearer ${token}` } });
+                cachedOrdinace = await resOrd.json();
+            }
+
+            const res = await fetch('/api/admin/lekari', { headers: { 'Authorization': `Bearer ${token}` } });
+            currentLekariData = await res.json();
+
+            const tbody = document.getElementById('tbl-lekari');
+            let html = '';
+
+            currentLekariData.forEach(l => {
+                const activeOrdIds = l.ordinace.map(o => o.Id);
+
+                html += `
+                    <tr class="hover:bg-slate-750/50">
+                        <td class="p-3 font-bold text-emerald-300">${l.Jmeno} ${l.Prijmeni}</td>
+                        <td class="p-3 text-slate-400">${l.Email}<br>${l.Telefon}</td>
+                        <td class="p-3">${l.Titul || '-'} / ${l.Specializace || 'Všeobecný'}</td>
+                        <td class="p-3">${l.ordinace.map(o => `<span class="px-2 py-0.5 bg-slate-700 text-emerald-300 rounded text-[10px] mr-1">${o.Nazev}</span>`).join('') || '-'}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="toggleLekarNestedRow(${l.LekarId})" class="px-2.5 py-1 bg-amber-500/20 text-amber-300 font-bold rounded hover:bg-amber-500/40">
+                                <i class="fa-solid fa-chevron-down mr-1"></i> Detail / Editace
+                            </button>
+                            <button onclick="deleteLekar(${l.LekarId})" class="p-1.5 bg-red-500/20 text-red-300 hover:bg-red-500/40 rounded">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <!-- VNOŘENÁ TABULKA / DETAIL PRO LÉKAŘE -->
+                    <tr id="lekar-nested-${l.LekarId}" class="hidden bg-slate-950/90">
+                        <td colspan="5" class="p-4">
+                            <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 space-y-5 text-xs">
+                                <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider"><i class="fa-solid fa-user-gear mr-1"></i> Editace Lékaře a jeho závislostí (#${l.LekarId})</h4>
+                                <input type="hidden" id="edit-lekar-uzivatel-id-${l.LekarId}" value="${l.UzivatelId}">
+
+                                <!-- 1. Profilové údaje -->
+                                <div class="space-y-2">
+                                    <span class="font-bold text-slate-300 uppercase text-[11px] block border-b border-slate-700 pb-1">1. Údaje z tabulek Uzivatele + Lekari</span>
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                        <div>
+                                            <label class="block font-bold text-slate-400 mb-1">Jméno</label>
+                                            <input type="text" id="edit-jmeno-${l.LekarId}" value="${l.Jmeno}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg">
+                                        </div>
+                                        <div>
+                                            <label class="block font-bold text-slate-400 mb-1">Příjmení</label>
+                                            <input type="text" id="edit-prijmeni-${l.LekarId}" value="${l.Prijmeni}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg">
+                                        </div>
+                                        <div>
+                                            <label class="block font-bold text-slate-400 mb-1">Email</label>
+                                            <input type="email" id="edit-email-${l.LekarId}" value="${l.Email}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg">
+                                        </div>
+                                        <div>
+                                            <label class="block font-bold text-slate-400 mb-1">Telefon</label>
+                                            <input type="text" id="edit-telefon-${l.LekarId}" value="${l.Telefon}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg">
+                                        </div>
+                                        <div>
+                                            <label class="block font-bold text-slate-400 mb-1">Titul</label>
+                                            <input type="text" id="edit-titul-${l.LekarId}" value="${l.Titul || ''}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg">
+                                        </div>
+                                        <div>
+                                            <label class="block font-bold text-slate-400 mb-1">Specializace</label>
+                                            <input type="text" id="edit-specializace-${l.LekarId}" value="${l.Specializace || ''}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2. Propojení do Ordinací -->
+                                <div class="space-y-2">
+                                    <span class="font-bold text-slate-300 uppercase text-[11px] block border-b border-slate-700 pb-1">2. Propojení do Ordinací</span>
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 bg-slate-900 p-3 rounded-xl border border-slate-700">
+                                        ${cachedOrdinace.map(o => `
+                                            <label class="flex items-center space-x-2 text-slate-300 cursor-pointer">
+                                                <input type="checkbox" name="lekar-ord-check-${l.LekarId}" value="${o.Id}" ${activeOrdIds.includes(o.Id) ? 'checked' : ''} class="rounded text-emerald-600">
+                                                <span>${o.Nazev}</span>
+                                            </label>
+                                        `).join('')}
+                                    </div>
+                                </div>
+
+                                <!-- 3. Pracovní doba -->
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-center border-b border-slate-700 pb-1">
+                                        <span class="font-bold text-slate-300 uppercase text-[11px]">3. Pracovní doba (PracDoba)</span>
+                                        <button type="button" onclick="addNestedPracDobaRow(${l.LekarId})" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 rounded text-[10px] font-bold">+ Přidat den</button>
+                                    </div>
+                                    <div id="pracdoba-container-${l.LekarId}" class="space-y-2">
+                                        ${l.pracovniDoba.map(pd => renderPracDobaRowHTML(pd.DenVTydnu, pd.Od, pd.Do)).join('')}
+                                    </div>
+                                </div>
+
+                                <!-- 4. Nepřítomnost -->
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-center border-b border-slate-700 pb-1">
+                                        <span class="font-bold text-slate-300 uppercase text-[11px]">4. Nepřítomnost (Nepritomnost)</span>
+                                        <button type="button" onclick="addNestedNepritomnostRow(${l.LekarId})" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 rounded text-[10px] font-bold">+ Přidat nepřítomnost</button>
+                                    </div>
+                                    <div id="nepritomnost-container-${l.LekarId}" class="space-y-2">
+                                    ${l.nepritomnost.map(np => {
+                                            const datum = np.Datum || np.datum ? (np.Datum || np.datum).split('T')[0] : '';
+                                            const celodenni = np.Celodenni !== undefined ? np.Celodenni : (np.celodenni !== undefined ? np.celodenni : true);
+                                            
+                                            const formatTime = (t) => t ? String(t).substring(0, 5) : '';
+                                            
+                                            const od = formatTime(np.CasOd || np.cas_od || np.casOd);
+                                            const doCas = formatTime(np.CasDo || np.cas_do || np.casDo);
+                                            const duvod = np.Duvod || np.duvod || '';
+
+                                            return renderNepritomnostRowHTML(datum, celodenni, od, doCas, duvod);
+                                        }).join('')}
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-end space-x-2 pt-2 border-t border-slate-700">
+                                    <button onclick="toggleLekarNestedRow(${l.LekarId})" class="px-3 py-1 bg-slate-700 rounded font-bold">Zavřít</button>
+                                    <button onclick="saveNestedLekar(${l.LekarId})" class="px-4 py-1 bg-emerald-600 hover:bg-emerald-500 rounded font-bold text-white">Uložit všechny změny lekare</button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function toggleLekarNestedRow(id) {
+            document.getElementById(`lekar-nested-${id}`).classList.toggle('hidden');
+        }
+
+        function renderPracDobaRowHTML(den = 1, od = '08:00', doCas = '16:00') {
+            return `
+                <div class="flex items-center space-x-2 bg-slate-900 p-2 rounded-xl border border-slate-700/60 pd-row">
+                    <select class="pd-den bg-slate-800 p-1.5 rounded border border-slate-700 font-mono">
+                        <option value="1" ${den == 1 ? 'selected' : ''}>Pondělí</option>
+                        <option value="2" ${den == 2 ? 'selected' : ''}>Úterý</option>
+                        <option value="3" ${den == 3 ? 'selected' : ''}>Středa</option>
+                        <option value="4" ${den == 4 ? 'selected' : ''}>Čtvrtek</option>
+                        <option value="5" ${den == 5 ? 'selected' : ''}>Pátek</option>
+                        <option value="6" ${den == 6 ? 'selected' : ''}>Sobota</option>
+                        <option value="7" ${den == 7 ? 'selected' : ''}>Neděle</option>
+                    </select>
+                    <input type="text" value="${od}" placeholder="Od" class="pd-od w-20 bg-slate-800 p-1.5 rounded border border-slate-700 text-center">
+                    <span>-</span>
+                    <input type="text" value="${doCas}" placeholder="Do" class="pd-do w-20 bg-slate-800 p-1.5 rounded border border-slate-700 text-center">
+                    <button type="button" onclick="this.parentElement.remove()" class="p-1 bg-red-600/30 hover:bg-red-600 text-red-300 rounded"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            `;
+        }
+
+        function addNestedPracDobaRow(lekarId) {
+            const container = document.getElementById(`pracdoba-container-${lekarId}`);
+            container.insertAdjacentHTML('beforeend', renderPracDobaRowHTML());
+        }
+
+        function renderNepritomnostRowHTML(datum = '', celodenni = true, CasOd = '', CasDo = '', duvod = '') {
+            return `
+                <div class="flex items-center space-x-2 bg-slate-900 p-2 rounded-xl border border-slate-700/60 np-row">
+                    <input type="date" value="${datum}" class="np-datum bg-slate-800 p-1.5 rounded border border-slate-700">
+                    <label class="flex items-center space-x-1 text-[11px]"><input type="checkbox" class="np-celodenni" ${celodenni ? 'checked' : ''}><span>Celodenní</span></label>
+                    <input type="text" value="${CasOd || ''}" placeholder="Od" class="np-od w-16 bg-slate-800 p-1.5 rounded border border-slate-700 text-center">
+                    <input type="text" value="${CasDo || ''}" placeholder="Do" class="np-do w-16 bg-slate-800 p-1.5 rounded border border-slate-700 text-center">
+                    <input type="text" value="${duvod || ''}" placeholder="Důvod" class="np-duvod flex-grow bg-slate-800 p-1.5 rounded border border-slate-700">
+                    <button type="button" onclick="this.parentElement.remove()" class="p-1 bg-red-600/30 hover:bg-red-600 text-red-300 rounded"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            `;
+        }
+
+        function addNestedNepritomnostRow(lekarId) {
+            const container = document.getElementById(`nepritomnost-container-${lekarId}`);
+            container.insertAdjacentHTML('beforeend', renderNepritomnostRowHTML());
+        }
+
+        async function saveNestedLekar(lekarId) {
+            const uzivatelId = document.getElementById(`edit-lekar-uzivatel-id-${lekarId}`).value;
+            const selectedOrd = Array.from(document.querySelectorAll(`input[name="lekar-ord-check-${lekarId}"]:checked`)).map(c => parseInt(c.value));
+
+            const pdList = Array.from(document.querySelectorAll(`#pracdoba-container-${lekarId} > .pd-row`)).map(row => ({
+                DenVTydnu: parseInt(row.querySelector('.pd-den').value),
+                CasOd: row.querySelector('.pd-od').value,
+                CasDo: row.querySelector('.pd-do').value
+            }));
+
+            const npList = Array.from(document.querySelectorAll(`#nepritomnost-container-${lekarId} > .np-row`)).map(row => ({
+                Datum: row.querySelector('.np-datum').value,
+                Celodenni: row.querySelector('.np-celodenni').checked,
+                CasOd: row.querySelector('.np-od').value,
+                CasDo: row.querySelector('.np-do').value,
+                Duvod: row.querySelector('.np-duvod').value
+            }));
+
+            const payload = {
+                uzivatelId: parseInt(uzivatelId),
+                jmeno: document.getElementById(`edit-jmeno-${lekarId}`).value,
+                prijmeni: document.getElementById(`edit-prijmeni-${lekarId}`).value,
+                email: document.getElementById(`edit-email-${lekarId}`).value,
+                telefon: document.getElementById(`edit-telefon-${lekarId}`).value,
+                titul: document.getElementById(`edit-titul-${lekarId}`).value,
+                specializace: document.getElementById(`edit-specializace-${lekarId}`).value,
+                ordinaceIds: selectedOrd,
+                pracovniDoba: pdList,
+                nepritomnosti: npList
+            };
+
+            const res = await fetch(`/api/admin/lekari/${lekarId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) 
+            {
+                alert('Lékař byl úspěšně aktualizován.');
+                loadLekari();
+            }       
+        }
+
+        async function deleteLekar(lekarId) {
+            if (!confirm('Opravdu smazat tohoto lékaře?')) return;
+            await fetch(`/api/admin/lekari/${lekarId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            loadLekari();
+        }
+
+        // ==========================================
+        // 3. UŽIVATELÉ (Vnořená tabulka - pouze pro čtení)
+        // ==========================================
+        async function loadUzivatele() {
+            const res = await fetch('/api/admin/uzivatele', { headers: { 'Authorization': `Bearer ${token}` } });
+            const uzivatele = await res.json();
+
+            const tbody = document.getElementById('tbl-uzivatele');
+            let html = '';
+
+            uzivatele.forEach(u => {
+                html += `
+                    <tr class="hover:bg-slate-750/50">
+                        <td class="p-3 font-bold text-emerald-300">#${u.Id} ${u.Jmeno} ${u.Prijmeni}</td>
+                        <td class="p-3 text-slate-400">${u.Email}</td>
+                        <td class="p-3">${u.Telefon || '-'}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded font-bold">${u.Role}</span></td>
+                        <td class="p-3 text-right">
+                            <button onclick="toggleUzivatelNestedRow(${u.Id})" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold rounded">
+                                <i class="fa-solid fa-eye mr-1"></i> Zobrazit vnořený detail
+                            </button>
+                        </td>
+                    </tr>
+                    <!-- VNOŘENÁ TABULKA PRO UŽIVATELE (BEZ EDITACE) -->
+                    <tr id="uzivatel-nested-${u.Id}" class="hidden bg-slate-950/90">
+                        <td colspan="5" class="p-4">
+                            <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 space-y-3">
+                                <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider"><i class="fa-solid fa-id-card mr-1"></i> Detailní profil uživatele (Pouze pro čtení)</h4>
+                                <table class="w-full text-left text-xs font-mono bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
+                                    <tbody class="divide-y divide-slate-800">
+                                        <tr><td class="p-2.5 text-slate-400 font-bold w-48">ID uživatele:</td><td class="p-2.5 text-slate-200">#${u.Id}</td></tr>
+                                        <tr><td class="p-2.5 text-slate-400 font-bold">Celé jméno:</td><td class="p-2.5 text-slate-200">${u.Jmeno} ${u.Prijmeni}</td></tr>
+                                        <tr><td class="p-2.5 text-slate-400 font-bold">Emailová adresa:</td><td class="p-2.5 text-slate-200">${u.Email}</td></tr>
+                                        <tr><td class="p-2.5 text-slate-400 font-bold">Telefonní číslo:</td><td class="p-2.5 text-slate-200">${u.Telefon || 'Nespecifikováno'}</td></tr>
+                                        <tr><td class="p-2.5 text-slate-400 font-bold">Přiřazená role:</td><td class="p-2.5 text-slate-200"><span class="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded font-bold">${u.Role}</span></td></tr>
+                                        <tr><td class="p-2.5 text-slate-400 font-bold">Preferovaná ordinace / FirmaId:</td><td class="p-2.5 text-slate-200">${u.PreferovanaOrdinaceNazev || 'ID: ' + u.PreferovanaOrdinaceId}</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function toggleUzivatelNestedRow(id) {
+            document.getElementById(`uzivatel-nested-${id}`).classList.toggle('hidden');
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        // Načtení výchozí záložky
+        loadOrdinace();
+    </script>
+</body>
+</html>

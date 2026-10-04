@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="cs" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VET-CARE | Veterinární Rezervační & Informační Systém</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        teal: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            200: '#99f6e4',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .glass-dark {
+            background: rgba(15, 23, 42, 0.90);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+        }
+        .pulse-live {
+            box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7);
+            animation: pulse-teal 2s infinite;
+        }
+        @keyframes pulse-teal {
+            0% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7); }
+            70% { box-shadow: 0 0 0 12px rgba(13, 148, 136, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); }
+        }
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 antialiased flex flex-col bg-slate-50 selection:bg-teal-500 selection:text-white">
+
+    <!-- TOP NAVIGATION & ROLE SWITCHER TOOLBAR -->
+    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Logo -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="switchRole('client')">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-teal-400 flex items-center justify-center text-white shadow-md shadow-teal-500/20">
+                        <i class="fa-solid fa-paw text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-xl tracking-tight text-slate-900">VET<span class="text-teal-600">-CARE</span></span>
+                        <span class="hidden sm:inline-block text-xs text-slate-400 font-medium ml-2 px-2 py-0.5 bg-slate-100 rounded-full border border-slate-200">Klinický systém</span>
+                    </div>
+                </div>
+
+                <!-- Role Switcher Control Center -->
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium">
+                    <button onclick="switchRole('client')" id="role-btn-client" class="role-tab flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all font-semibold shadow-sm bg-white text-teal-700">
+                        <i class="fa-solid fa-user-heart text-teal-600"></i>
+                        <span class="hidden md:inline">Klient</span>
+                    </button>
+                    <button onclick="switchRole('doctor')" id="role-btn-doctor" class="role-tab flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+                        <i class="fa-solid fa-user-doctor text-indigo-500"></i>
+                        <span class="hidden md:inline">Lékař</span>
+                    </button>
+                    <button onclick="switchRole('admin')" id="role-btn-admin" class="role-tab flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+                        <i class="fa-solid fa-sliders text-amber-500"></i>
+                        <span class="hidden md:inline">Admin</span>
+                    </button>
+                    <button onclick="switchRole('tv')" id="role-btn-tv" class="role-tab flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+                        <i class="fa-solid fa-tv text-purple-500"></i>
+                        <span class="hidden md:inline">TV Čekárna</span>
+                    </button>
+                </div>
+
+                <!-- Live System Indicator & User Profile -->
+                <div class="flex items-center gap-3">
+                    <div id="clock-header" class="hidden lg:flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-100 text-slate-600 font-mono text-xs font-semibold">
+                        <i class="fa-regular fa-clock text-teal-600"></i> <span id="header-time">00:00:00</span>
+                    </div>
+                    
+                    <button onclick="resetDataToDefault()" title="Obnovit demo data" class="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-100 transition-colors">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- GLOBAL NOTIFICATION TOAST CONTAINER -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3 max-w-sm pointer-events-none"></div>
+
+    <!-- MAIN CONTENT VIEW CONTAINER -->
+    <main class="flex-1 flex flex-col">
+
+        <!-- ========================================================================================================= -->
+        <!-- VIEW 1: CLIENT PORTAL (VEŘEJNÝ REZERVAČNÍ FORMULÁŘ A SPRÁVA ZVÍŘAT) -->
+        <!-- ========================================================================================================= -->
+        <section id="view-client" class="app-view flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+            <!-- Client Sub-navigation -->
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Veterinární Péče na Míru</h1>
+                    <p class="text-sm text-slate-500 mt-1">Rezervujte si termín u svého veterináře během několika kliknutí.</p>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+                    <button onclick="showClientTab('booking')" id="tab-btn-booking" class="client-tab px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-white text-teal-700 shadow-sm">
+                        <i class="fa-solid fa-calendar-plus mr-1.5"></i>Nová Rezervace
+                    </button>
+                    <button onclick="showClientTab('mypets')" id="tab-btn-mypets" class="client-tab px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900">
+                        <i class="fa-solid fa-paw mr-1.5"></i>Moje Zvířata (<span id="client-pets-count">0</span>)
+                    </button>
+                    <button onclick="showClientTab('myappointments')" id="tab-btn-myappointments" class="client-tab px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900">
+                        <i class="fa-solid fa-clock-rotate-left mr-1.5"></i>Moje Termíny (<span id="client-appts-count">0</span>)
+                    </button>
+                </div>
+            </div>
+
+            <!-- SUB-TAB 1: BOOKING WIZARD -->
+            <div id="client-tab-booking" class="client-tab-content space-y-6">
+                <!-- Clinic Lookup & Quick Switcher Banner -->
+                <div class="bg-gradient-to-r from-teal-900 via-teal-800 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="max-w-3xl space-y-4">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 text-teal-200 text-xs font-semibold border border-teal-500/30">
+                            <i class="fa-solid fa-magnifying-glass font-normal"></i> Vyhledávač Ordinací & IČO
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-bold">Vyberte pracoviště pro vaše zvíře</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="col-span-1 sm:col-span-2 relative">
+                                <input type="text" id="ico-search-input" placeholder="Zadejte IČO (např. 87654321) nebo název..." class="w-full pl-10 pr-4 py-2.5 rounded-xl text-slate-900 bg-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
+                                <i class="fa-solid fa-building absolute left-3.5 top-3.5 text-slate-400"></i>
+                            </div>
+                            <button onclick="searchClinicByICO()" class="bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold px-4 py-2.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-md">
+                                <i class="fa-solid fa-check"></i> Ověřit & Načíst
+                            </button>
+                        </div>
+                        <div id="ico-lookup-result" class="hidden p-3 rounded-xl bg-white/10 text-xs border border-white/10 text-teal-100"></div>
+                    </div>
+                </div>
+
+                <!-- Multi-Step Booking Form Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left Column: Form Controls -->
+                    <div class="lg:col-span-2 space-y-6">
+                        
+                        <!-- Step 1: Select Clinic & Doctor -->
+                        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+                                <span class="w-7 h-7 rounded-full bg-teal-100 text-teal-700 font-bold text-xs flex items-center justify-center">1</span>
+                                <h3 class="font-bold text-slate-900">Volba Pracoviště a Veterináře</h3>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Clinic Selection -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Pobočka / Ordinace *</label>
+                                    <select id="book-clinic-select" onchange="onBookingClinicChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                                        <!-- Dynamic options -->
+                                    </select>
+                                </div>
+
+                                <!-- Doctor Selection (N:M filtering) -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Veterinární Lékař *</label>
+                                    <select id="book-doctor-select" onchange="onBookingDoctorChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                                        <!-- Dynamic options based on N:M mapping -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Service & Pet -->
+                        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+                                <span class="w-7 h-7 rounded-full bg-teal-100 text-teal-700 font-bold text-xs flex items-center justify-center">2</span>
+                                <h3 class="font-bold text-slate-900">Úkon a Registrace Pacienta</h3>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Service Selection -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Požadovaný Úkon *</label>
+                                    <select id="book-service-select" onchange="generateAvailableSlots()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                                        <!-- Services list -->
+                                    </select>
+                                </div>
+
+                                <!-- Selected Pet -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Pacient (Zvíře) *</label>
+                                    <div class="flex gap-2">
+                                        <select id="book-pet-select" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                                            <!-- Client pets -->
+                                        </select>
+                                        <button onclick="openPetModal()" title="Přidat nové zvíře" class="p-2.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-xl border border-teal-200 transition-colors">
+                                            <i class="fa-solid fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Date & Available Slot Picker -->
+                        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-7 h-7 rounded-full bg-teal-100 text-teal-700 font-bold text-xs flex items-center justify-center">3</span>
+                                    <h3 class="font-bold text-slate-900">Výběr Termínu</h3>
+                                </div>
+                                <span id="slot-duration-badge" class="text-xs font-medium text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full border border-teal-100">Trvání: 20 min</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+                                <div class="sm:col-span-1">
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Datum návštěvy *</label>
+                                    <input type="date" id="book-date-input" onchange="generateAvailableSlots()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <p class="text-xs font-semibold text-slate-600 mb-1">Dostupné časové sloty pro vybraný den</p>
+                                    <div id="slots-container" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto scrollbar-thin p-1 bg-slate-50 rounded-xl border border-slate-200">
+                                        <!-- Dynamic slots buttons -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Column: Summary Card & Client Info -->
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4 sticky top-20">
+                            <h3 class="font-bold text-slate-900 text-lg border-b border-slate-100 pb-3">Shrnutí Rezervace</h3>
+                            
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between py-1 border-b border-slate-50">
+                                    <span class="text-slate-500">Klient:</span>
+                                    <span id="summary-client-name" class="font-medium text-slate-800">Petr Dvořák</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-slate-50">
+                                    <span class="text-slate-500">Pobočka:</span>
+                                    <span id="summary-clinic" class="font-medium text-slate-800">--</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-slate-50">
+                                    <span class="text-slate-500">Veterinář:</span>
+                                    <span id="summary-doctor" class="font-medium text-slate-800">--</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-slate-50">
+                                    <span class="text-slate-500">Úkon:</span>
+                                    <span id="summary-service" class="font-medium text-slate-800">--</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-slate-50">
+                                    <span class="text-slate-500">Pacient:</span>
+                                    <span id="summary-pet" class="font-medium text-slate-800">--</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-slate-50">
+                                    <span class="text-slate-500">Termín:</span>
+                                    <span id="summary-datetime" class="font-semibold text-teal-600">Vyberte slot</span>
+                                </div>
+                                <div class="flex justify-between py-2 text-base font-bold text-slate-900 bg-slate-50 p-3 rounded-xl">
+                                    <span>Orientační cena:</span>
+                                    <span id="summary-price" class="text-teal-700">0 Kč</span>
+                                </div>
+                            </div>
+
+                            <!-- Additional Client Note -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Poznámka pro lékaře (příznaky, obtíže)</label>
+                                <textarea id="book-note-input" rows="2" placeholder="Napište případné podrobnosti..." class="w-full p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:outline-none"></textarea>
+                            </div>
+
+                            <button onclick="submitReservation()" id="submit-booking-btn" disabled class="w-full bg-slate-300 text-slate-500 font-bold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-not-allowed">
+                                <i class="fa-solid fa-paper-plane"></i> Potvrdit a Odeslat Rezervaci
+                            </button>
+                            <p class="text-[11px] text-slate-400 text-center">Po odeslání obdržíte potvrzovací e-mail a SMS s detaily rezervace.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-TAB 2: MY PETS MANAGEMENT -->
+            <div id="client-tab-mypets" class="client-tab-content space-y-6 hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Moje Registrovaná Zvířata</h2>
+                        <p class="text-xs text-slate-500">Přehled zvířecích pacientů přiřazených k vašemu profilu.</p>
+                    </div>
+                    <button onclick="openPetModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-all">
+                        <i class="fa-solid fa-plus"></i> Přidat Zvíře
+                    </button>
+                </div>
+
+                <div id="pets-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Dynamic Pet Cards -->
+                </div>
+            </div>
+
+            <!-- SUB-TAB 3: MY APPOINTMENTS -->
+            <div id="client-tab-myappointments" class="client-tab-content space-y-6 hidden">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Moje Rezervace a Historie</h2>
+                    <p class="text-xs text-slate-500">Seznam všech nadcházejících i proběhlých návštěv.</p>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
+                                <tr>
+                                    <th class="p-4">Datum a Čas</th>
+                                    <th class="p-4">Zvíře</th>
+                                    <th class="p-4">Úkon</th>
+                                    <th class="p-4">Pobočka & Lékař</th>
+                                    <th class="p-4">Stav</th>
+                                    <th class="p-4 text-right">Akce</th>
+                                </tr>
+                            </thead>
+                            <tbody id="client-appointments-tbody" class="divide-y divide-slate-100">
+                                <!-- Dynamic client rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================================================= -->
+        <!-- VIEW 2: DOCTOR / CLINIC DASHBOARD -->
+        <!-- ========================================================================================================= -->
+        <section id="view-doctor" class="app-view flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 hidden">
+            <!-- Doctor Top Filter & Control Header -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm mb-6 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-user-doctor"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-xl font-bold text-slate-900" id="doctor-dashboard-name">MVDr. Jan Novotný</h2>
+                            <span class="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-0.5 rounded-full font-semibold border border-indigo-100">Aktivní sloužící</span>
+                        </div>
+                        <p class="text-xs text-slate-500">Správa agendy, změna stavu pacientů a zápisy do zdravotních karet</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase">Filtrovat Lékaře</label>
+                        <select id="doc-filter-doctor" onchange="renderDoctorDashboard()" class="p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+                            <!-- Options -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase">Datum Agendy</label>
+                        <input type="date" id="doc-filter-date" onchange="renderDoctorDashboard()" class="p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <button onclick="openBlockageModal()" class="mt-4 sm:mt-0 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold px-3 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors">
+                        <i class="fa-solid fa-ban"></i> Přidat Blokaci / Dovolenou
+                    </button>
+                </div>
+            </div>
+
+            <!-- Doctor Main Workspace Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left Column (2 Cols): Agenda & Queue -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Queue Status Summary Cards -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                            <p class="text-xs font-medium text-slate-500">V Čekárně</p>
+                            <p id="cnt-waiting" class="text-2xl font-bold text-amber-600 mt-1">0</p>
+                        </div>
+                        <div class="bg-teal-50 p-4 rounded-xl border border-teal-200 shadow-sm text-center">
+                            <p class="text-xs font-semibold text-teal-800">V Ordinaci</p>
+                            <p id="cnt-inroom" class="text-2xl font-bold text-teal-700 mt-1">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                            <p class="text-xs font-medium text-slate-500">Potvrzeno</p>
+                            <p id="cnt-confirmed" class="text-2xl font-bold text-blue-600 mt-1">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                            <p class="text-xs font-medium text-slate-500">Dokončeno Dnes</p>
+                            <p id="cnt-completed" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+                        </div>
+                    </div>
+
+                    <!-- Daily Agenda Table -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                            <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-teal-600"></i>
+                                Časová Agenda Pacientů
+                            </h3>
+                            <span class="text-xs text-slate-400 font-mono" id="doc-agenda-date-label">Dnes</span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="p-3">Čas</th>
+                                        <th class="p-3">Pacient & Majitel</th>
+                                        <th class="p-3">Úkon</th>
+                                        <th class="p-3">Stav Rezervace</th>
+                                        <th class="p-3 text-right">Ovládání Stavu / Karta</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="doctor-agenda-tbody" class="divide-y divide-slate-100">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column (1 Col): Medical Card Quick Drawer / Entry -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-file-medical text-indigo-600"></i>
+                                Zdravotní Karta Pacienta
+                            </h3>
+                            <span id="medcard-pet-badge" class="text-xs bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-md">Není vybrán</span>
+                        </div>
+
+                        <div id="medcard-content-empty" class="text-center py-8 text-slate-400">
+                            <i class="fa-solid fa-notes-medical text-3xl mb-2 block"></i>
+                            <p class="text-xs">Klikněte na tlačítko <i class="fa-solid fa-notes-medical"></i> u pacienta v agendě pro zobrazení karty.</p>
+                        </div>
+
+                        <div id="medcard-content-active" class="hidden space-y-4">
+                            <!-- Pet info header -->
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+                                <div class="font-bold text-sm text-slate-800" id="med-pet-name">Max (Pes - Německý ovčák)</div>
+                                <div class="text-slate-500" id="med-pet-meta">Majitel: Alena Černá | Čip: 90012388</div>
+                            </div>
+
+                            <!-- Add Record Form -->
+                            <div class="space-y-3">
+                                <p class="text-xs font-bold text-slate-700">Nový lékařský nález / Zápis</p>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 uppercase font-semibold">Anamnéza a Nález</label>
+                                    <textarea id="med-input-notes" rows="3" placeholder="Zadejte klinické vyšetření, teplotu, symptomy..." class="w-full p-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 uppercase font-semibold">Předepsané léky & Terapie</label>
+                                    <input type="text" id="med-input-meds" placeholder="Např. Amoksiklav 250mg, 1x denně" class="w-full p-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500">
+                                </div>
+                                <button onclick="saveMedicalRecord()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-3 rounded-xl text-xs shadow-sm transition-all flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-save"></i> Uložit do Zdravotní Karty
+                                </button>
+                            </div>
+
+                            <!-- Medical History Timeline -->
+                            <div class="space-y-2 pt-2 border-t border-slate-100">
+                                <p class="text-xs font-bold text-slate-700">Historie Záznamů</p>
+                                <div id="med-history-list" class="space-y-2 max-h-60 overflow-y-auto scrollbar-thin">
+                                    <!-- History items -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================================================= -->
+        <!-- VIEW 3: ADMIN DASHBOARD (Pobočky, N:M Vazby, Úkony, Uživatelé) -->
+        <!-- ========================================================================================================= -->
+        <section id="view-admin" class="app-view flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 hidden">
+            <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Administrace Systému VET-CARE</h1>
+                    <p class="text-sm text-slate-500 mt-1">Správa poboček, vazeb lekar-ordinace (N:M), délek úkonů a uživatelů.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-bold border border-amber-200">
+                        <i class="fa-solid fa-shield-halved mr-1"></i> Admin Režim
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Admin Box 1: Clinics & N:M Doctors Mapping -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-hospital text-teal-600"></i>
+                            Pobočky & Přiřazení Lékařů (N:M Vazba)
+                        </h3>
+                        <button onclick="openClinicModal()" class="text-xs font-semibold bg-teal-50 text-teal-700 hover:bg-teal-100 px-3 py-1.5 rounded-lg border border-teal-200">
+                            + Pobočka
+                        </button>
+                    </div>
+
+                    <div id="admin-clinics-list" class="space-y-4">
+                        <!-- Dynamic list of clinics with multi-select doctors -->
+                    </div>
+                </div>
+
+                <!-- Admin Box 2: Services & Durations Config -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-clock text-indigo-600"></i>
+                            Typy Úkonů a Nastavení Délky Slotů
+                        </h3>
+                        <button onclick="openServiceModal()" class="text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-200">
+                            + Nový Úkon
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-xs text-slate-500 uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Název Úkonu</th>
+                                    <th class="p-3">Délka (min)</th>
+                                    <th class="p-3">Cena (Kč)</th>
+                                    <th class="p-3 text-right">Akce</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-services-tbody" class="divide-y divide-slate-100">
+                                <!-- Dynamic services list -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================================================= -->
+        <!-- VIEW 4: WAITING ROOM TV DISPLAY (OBRAZOVKA ČEKÁRNY - PROMÍTÁNÍ) -->
+        <!-- ========================================================================================================= -->
+        <section id="view-tv" class="app-view flex-1 bg-slate-950 text-white p-6 lg:p-12 flex flex-col justify-between hidden min-h-screen">
+            <!-- TV Header -->
+            <div class="flex items-center justify-between border-b border-slate-800 pb-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-teal-500 flex items-center justify-center text-slate-950 text-2xl font-black shadow-lg shadow-teal-500/30">
+                        <i class="fa-solid fa-paw"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-black tracking-tight text-white">VET-CARE <span class="text-teal-400">ČEKÁRNA</span></h1>
+                        <p class="text-sm text-slate-400">Přehled pořadí pacientů | Anonymizovaný GDPR displej</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-6">
+                    <div class="text-right">
+                        <div id="tv-clock" class="font-mono text-4xl font-bold tracking-wider text-teal-400">00:00:00</div>
+                        <div id="tv-date" class="text-xs text-slate-400 uppercase tracking-widest font-semibold mt-1">Pondělí 26. Září</div>
+                    </div>
+                    <button onclick="switchRole('doctor')" class="opacity-30 hover:opacity-100 text-xs bg-slate-800 p-2 rounded-lg text-slate-300">
+                        <i class="fa-solid fa-xmark"></i> Zavřít TV
+                    </button>
+                </div>
+            </div>
+
+            <!-- TV Main Content Sections -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 my-8 flex-1">
+                <!-- Active Patient Box (PRÁVĚ V ORDINACI) -->
+                <div class="lg:col-span-1 bg-gradient-to-b from-teal-950/80 to-slate-900 border-2 border-teal-500/50 rounded-3xl p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden pulse-live">
+                    <div class="absolute -top-12 -right-12 w-40 h-40 bg-teal-500/20 rounded-full blur-2xl"></div>
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500 text-slate-950 text-xs font-extrabold uppercase tracking-widest mb-6">
+                            <span class="w-2 h-2 rounded-full bg-slate-950 animate-ping"></span> Právě v Ordinaci
+                        </div>
+                        <div id="tv-current-patient" class="space-y-4">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+                    <div class="pt-6 border-t border-teal-500/20 text-xs text-teal-300 flex items-center justify-between">
+                        <span><i class="fa-solid fa-door-open mr-1"></i> Vstupte prosím</span>
+                        <span class="font-mono">Ordinace č. 1</span>
+                    </div>
+                </div>
+
+                <!-- Next Patient (PŘIPRAVÍ SE) -->
+                <div class="lg:col-span-1 bg-slate-900/90 border border-slate-800 rounded-3xl p-8 flex flex-col justify-between shadow-xl">
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-extrabold uppercase tracking-widest border border-amber-500/30 mb-6">
+                            <i class="fa-solid fa-bell"></i> Připraví se
+                        </div>
+                        <div id="tv-next-patient" class="space-y-4">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+                    <div class="pt-6 border-t border-slate-800 text-xs text-slate-400">
+                        Prosíme majitele o přípravu zvířete v čekárně.
+                    </div>
+                </div>
+
+                <!-- Upcoming Queue List (NÁSLEDUJÍCÍ PACIENTI) -->
+                <div class="lg:col-span-1 bg-slate-900/60 border border-slate-800 rounded-3xl p-8 flex flex-col justify-between">
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-xs font-extrabold uppercase tracking-widest mb-6">
+                            <i class="fa-solid fa-list-ol"></i> Následující Pořadí
+                        </div>
+                        <div id="tv-queue-list" class="space-y-3 max-h-80 overflow-y-auto scrollbar-thin">
+                            <!-- Dynamic queue list -->
+                        </div>
+                    </div>
+                    <div class="pt-6 border-t border-slate-800 text-xs text-slate-500">
+                        Časy jsou orientační a mohou se lišit dle akutních případů.
+                    </div>
+                </div>
+            </div>
+
+            <!-- TV Footer Ticker -->
+            <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-teal-400"></i>
+                    <span>Doporučujeme mít psy na vodítku a kočky v přepravce. Pohotovostní tel: +420 800 123 456</span>
+                </div>
+                <div class="hidden md:block text-slate-500 font-mono">VET-CARE TV v2.4</div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL 1: ADD / EDIT PET MODAL -->
+    <div id="modal-pet" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-lg" id="modal-pet-title">Registrace Nového Zvířete</h3>
+                <button onclick="closePetModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <form id="pet-form" onsubmit="handleSavePet(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Jméno Zvířete *</label>
+                    <input type="text" id="pet-input-name" required placeholder="např. Bery" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Druh *</label>
+                        <select id="pet-input-species" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500">
+                            <option value="Pes">Pes</option>
+                            <option value="Kočka">Kočka</option>
+                            <option value="Hlodavec">Hlodavec</option>
+                            <option value="Pták">Pták</option>
+                            <option value="Exot">Exot / Jiné</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Rasa / Plemeno</label>
+                        <input type="text" id="pet-input-breed" placeholder="např. Labrador" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Přezdívka</label>
+                        <input type="text" id="pet-input-nickname" placeholder="např. Berynek" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Věk (roky)</label>
+                        <input type="number" id="pet-input-age" min="0" max="40" value="3" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-teal-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Číslo Čipu (volitelné)</label>
+                    <input type="text" id="pet-input-chip" placeholder="např. 900123000456" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-teal-500">
+                </div>
+
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closePetModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">Zrušit</button>
+                    <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-semibold shadow-sm">Uložit Zvíře</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ADD BLOCKAGE MODAL (Dovolená / Operace) -->
+    <div id="modal-blockage" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-lg">Přidat Blokaci Času / Dovolenou</h3>
+                <button onclick="closeBlockageModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <form onsubmit="handleSaveBlockage(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Lékař *</label>
+                    <select id="block-doctor-select" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                        <!-- Options -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Důvod blokace *</label>
+                    <input type="text" id="block-reason-input" required placeholder="např. Obědová pauza, Dovolená, Operace mimo kliniku" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Datum *</label>
+                        <input type="date" id="block-date-input" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Čas od - do *</label>
+                        <div class="flex gap-1">
+                            <input type="time" id="block-start-time" value="12:00" required class="w-full p-2 bg-slate-50 border rounded-lg text-xs">
+                            <input type="time" id="block-end-time" value="13:00" required class="w-full p-2 bg-slate-50 border rounded-lg text-xs">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closeBlockageModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">Zrušit</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-sm">Uložit Blokaci</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: SIMULATED EMAIL NOTIFICATION PREVIEW -->
+    <div id="modal-email-sim" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border-t-4 border-teal-500 relative">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-envelope-circle-check text-teal-600 text-xl"></i>
+                    <h3 class="font-bold text-slate-900">Simulace Odeslaného E-mailu Klientovi</h3>
+                </div>
+                <button onclick="closeEmailSimModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 text-xs space-y-2">
+                <div class="flex justify-between border-b border-slate-200 pb-2">
+                    <span class="text-slate-500">Komu:</span>
+                    <span id="email-sim-to" class="font-mono font-semibold text-slate-800">petr.dvorak@email.cz</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-200 pb-2">
+                    <span class="text-slate-500">Předmět:</span>
+                    <span id="email-sim-subject" class="font-bold text-teal-700">Potvrzení rezervace - VET-CARE</span>
+                </div>
+                <div class="pt-2 text-slate-700 whitespace-pre-line leading-relaxed" id="email-sim-body">
+                    Dobrý den, Vaše rezervace pro zvíře Bery byla úspěšně potvrzena.
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <span class="text-[11px] text-teal-600 font-semibold"><i class="fa-solid fa-check"></i> E-mailová notifikace simulována v systému</span>
+                <button onclick="closeEmailSimModal()" class="bg-teal-600 text-white font-semibold px-4 py-2 rounded-xl text-xs">Rozumím</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        /* ========================================================================================================= */
+        /* APPLICATION STATE & DEFAULT DATA STORE persistent in localStorage                                        */
+        /* ========================================================================================================= */
+        const STORAGE_KEY = 'vet_care_app_state_v1';
+
+        const defaultData = {
+            currentRole: 'client', // 'client' | 'doctor' | 'admin' | 'tv'
+            activeClient: {
+                id: 'cli-1',
+                name: 'Petr Dvořák',
+                email: 'petr.dvorak@email.cz',
+                phone: '+420 777 123 456'
+            },
+            clinics: [
+                { id: 'cli-brno-1', name: 'VET-CARE Brno - Střed', ico: '87654321', address: 'Křenová 14, Brno', phone: '+420 541 222 111', doctors: ['doc-1', 'doc-2'] },
+                { id: 'cli-brno-2', name: 'VET-CARE Brno - Sever', ico: '87654321', address: 'Lesnická 22, Brno', phone: '+420 541 333 222', doctors: ['doc-1', 'doc-3'] },
+                { id: 'cli-ostopovice', name: 'VET-CARE Ostopovice', ico: '87654321', address: 'Hlavní 88, Ostopovice', phone: '+420 541 999 888', doctors: ['doc-2', 'doc-3'] }
+            ],
+            doctors: [
+                { id: 'doc-1', name: 'MVDr. Jan Novotný', title: 'Chirurg a specialista na malá zvířata', color: 'teal' },
+                { id: 'doc-2', name: 'MVDr. Eliška Svobodová', title: 'Stomatologie a drobní savci', color: 'indigo' },
+                { id: 'doc-3', name: 'MVDr. Pavel Kučera', title: 'Ortopedie a exotičtí pacienti', color: 'amber' }
+            ],
+            services: [
+                { id: 'srv-1', name: 'Očkování a odčervení', durationMinutes: 15, priceCzk: 450 },
+                { id: 'srv-2', name: 'Běžná kontrola / Konzultace', durationMinutes: 20, priceCzk: 350 },
+                { id: 'srv-3', name: 'Preventivní prohlídka', durationMinutes: 30, priceCzk: 600 },
+                { id: 'srv-4', name: 'Dentální hygiena & Ultrazvuk', durationMinutes: 45, priceCzk: 1200 },
+                { id: 'srv-5', name: 'Chirurgický zákrok / Operace', durationMinutes: 60, priceCzk: 2500 },
+                { id: 'srv-6', name: 'Čipování a vystavení pasu', durationMinutes: 20, priceCzk: 550 }
+            ],
+            pets: [
+                { id: 'pet-1', clientId: 'cli-1', name: 'Bery', species: 'Pes', breed: 'Zlatý Retrívr', nickname: 'Berynek', age: 4, chip: '900123000101' },
+                { id: 'pet-2', clientId: 'cli-1', name: 'Mína', species: 'Kočka', breed: 'Britská modrá', nickname: 'Mínečka', age: 2, chip: '900123000102' },
+                { id: 'pet-3', clientId: 'cli-2', name: 'Max', species: 'Pes', breed: 'Německý ovčák', nickname: 'Maxík', age: 6, chip: '900123000201' },
+                { id: 'pet-4', clientId: 'cli-3', name: 'Bobík', species: 'Hlodavac', breed: 'Zakrslý králík', nickname: 'Bóba', age: 1, chip: '' }
+            ],
+            medicalRecords: [
+                { id: 'med-1', petId: 'pet-1', date: '2026-05-10', doctorName: 'MVDr. Jan Novotný', notes: 'Pravidelné očkování DHPPi + L. Pes klinicky zdravý, teplota 38.4 °C.', meds: 'Vakcína Nobivac' },
+                { id: 'med-2', petId: 'pet-3', date: '2026-08-14', doctorName: 'MVDr. Eliška Svobodová', notes: 'Čištění zubního kamene ultrazvukem v lehkého sedaci.', meds: 'Noroclav 250mg' }
+            ],
+            blockages: [
+                { id: 'blk-1', doctorId: 'doc-1', date: getTodayISO(), startTime: '12:00', endTime: '12:45', reason: 'Obědová pauza' }
+            ],
+            reservations: [
+                {
+                    id: 'res-1',
+                    clientId: 'cli-1',
+                    clientName: 'Petr Dvořák',
+                    clientEmail: 'petr.dvorak@email.cz',
+                    petId: 'pet-1',
+                    petName: 'Bery',
+                    petSpecies: 'Pes',
+                    clinicId: 'cli-brno-1',
+                    doctorId: 'doc-1',
+                    serviceId: 'srv-2',
+                    serviceName: 'Běžná kontrola / Konzultace',
+                    date: getTodayISO(),
+                    time: '09:00',
+                    durationMinutes: 20,
+                    priceCzk: 350,
+                    status: 'V ordinaci', // 'Potvrzeno' | 'Čeká v čekárně' | 'V ordinaci' | 'Dokončeno' | 'Zrušeno'
+                    note: 'Kulhá na pravou přední tlapku.'
+                },
+                {
+                    id: 'res-2',
+                    clientId: 'cli-2',
+                    clientName: 'Alena Černá',
+                    clientEmail: 'a.cerna@seznam.cz',
+                    petId: 'pet-3',
+                    petName: 'Max',
+                    petSpecies: 'Pes',
+                    clinicId: 'cli-brno-1',
+                    doctorId: 'doc-1',
+                    serviceId: 'srv-1',
+                    serviceName: 'Očkování a odčervení',
+                    date: getTodayISO(),
+                    time: '09:30',
+                    durationMinutes: 15,
+                    priceCzk: 450,
+                    status: 'Čeká v čekárně',
+                    note: 'Pravidelná revakcinace.'
+                },
+                {
+                    id: 'res-3',
+                    clientId: 'cli-3',
+                    clientName: 'Michal Horák',
+                    clientEmail: 'm.horak@centrum.cz',
+                    petId: 'pet-4',
+                    petName: 'Bobík',
+                    petSpecies: 'Hlodavac',
+                    clinicId: 'cli-brno-1',
+                    doctorId: 'doc-1',
+                    serviceId: 'srv-3',
+                    serviceName: 'Preventivní prohlídka',
+                    date: getTodayISO(),
+                    time: '10:00',
+                    durationMinutes: 30,
+                    priceCzk: 600,
+                    status: 'Potvrzeno',
+                    note: 'Přerůstající hlodáky.'
+                }
+            ]
+        };
+
+        let state = loadState();
+
+        function getTodayISO() {
+            const today = new Date();
+            return today.toISOString().split('T')[0];
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) return JSON.parse(saved);
+            } catch (e) {
+                console.error("Failed to load local storage", e);
+            }
+            return defaultData;
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.error("Failed to save local storage", e);
+            }
+        }
+
+        function resetDataToDefault() {
+            state = JSON.parse(JSON.stringify(defaultData));
+            saveState();
+            showToast('Systém byl obnoven do výchozího demo stavu', 'info');
+            initApp();
+        }
+
+        /* ========================================================================================================= */
+        /* GLOBAL NAVIGATION & ROLE SWITCHER                                                                        */
+        /* ========================================================================================================= */
+        function switchRole(roleName) {
+            state.currentRole = roleName;
+            saveState();
+
+            // Hide all view sections
+            document.querySelectorAll('.app-view').forEach(el => el.classList.add('hidden'));
+            
+            // Remove active classes from header buttons
+            document.querySelectorAll('.role-tab').forEach(el => {
+                el.classList.remove('bg-white', 'text-teal-700', 'shadow-sm', 'font-semibold');
+                el.classList.add('text-slate-600');
+            });
+
+            const activeBtn = document.getElementById(`role-btn-${roleName}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-white', 'text-teal-700', 'shadow-sm', 'font-semibold');
+                activeBtn.classList.remove('text-slate-600');
+            }
+
+            // Show selected view
+            const viewTarget = document.getElementById(`view-${roleName}`);
+            if (viewTarget) {
+                viewTarget.classList.remove('hidden');
+            }
+
+            // Refresh view-specific content
+            if (roleName === 'client') renderClientPortal();
+            if (roleName === 'doctor') renderDoctorDashboard();
+            if (roleName === 'admin') renderAdminDashboard();
+            if (roleName === 'tv') renderTvDisplay();
+        }
+
+        /* ========================================================================================================= */
+        /* CLIENT PORTAL & RESERVATION WIZARD LOGIC                                                                 */
+        /* ========================================================================================================= */
+        let selectedSlotTime = null;
+
+        function renderClientPortal() {
+            renderClientPetsDropdown();
+            renderClientPetsList();
+            renderClientAppointments();
+            populateBookingClinicSelect();
+            populateBookingServicesSelect();
+            
+            // Set default date to today or tomorrow
+            const dateInput = document.getElementById('book-date-input');
+            if (!dateInput.value) {
+                dateInput.value = getTodayISO();
+            }
+
+            onBookingClinicChange();
+            updateSummaryCard();
+        }
+
+        function showClientTab(tabName) {
+            document.querySelectorAll('.client-tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.client-tab').forEach(el => {
+                el.classList.remove('bg-white', 'text-teal-700', 'shadow-sm', 'font-semibold');
+                el.classList.add('text-slate-600');
+            });
+
+            document.getElementById(`client-tab-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-white', 'text-teal-700', 'shadow-sm', 'font-semibold');
+                activeBtn.classList.remove('text-slate-600');
+            }
+        }
+
+        function searchClinicByICO() {
+            const query = document.getElementById('ico-search-input').value.trim();
+            const resultBox = document.getElementById('ico-lookup-result');
+            if (!query) {
+                showToast('Zadejte IČO nebo název firmy', 'warning');
+                return;
+            }
+
+            const found = state.clinics.find(c => c.ico.includes(query) || c.name.toLowerCase().includes(query.toLowerCase()));
+            resultBox.classList.remove('hidden');
+
+            if (found) {
+                resultBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Nalezena pobočka: <strong>${found.name}</strong> (${found.address}) - IČO: ${found.ico}`;
+                document.getElementById('book-clinic-select').value = found.id;
+                onBookingClinicChange();
+            } else {
+                resultBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400 mr-1"></i> Žádná pobočka odpovídající dotazu "${query}" nebyla v systému spárována. Zobrazuji výchozí nabídku.`;
+            }
+        }
+
+        function populateBookingClinicSelect() {
+            const select = document.getElementById('book-clinic-select');
+            select.innerHTML = state.clinics.map(c => `<option value="${c.id}">${c.name} (${c.address})</option>`).join('');
+        }
+
+        function onBookingClinicChange() {
+            const clinicId = document.getElementById('book-clinic-select').value;
+            const clinic = state.clinics.find(c => c.id === clinicId);
+            
+            // Filter doctors in N:M relationship
+            const doctorSelect = document.getElementById('book-doctor-select');
+            if (clinic) {
+                const assignedDocs = state.doctors.filter(d => clinic.doctors.includes(d.id));
+                doctorSelect.innerHTML = assignedDocs.map(d => `<option value="${d.id}">${d.name} (${d.title})</option>`).join('');
+            }
+            
+            onBookingDoctorChange();
+        }
+
+        function onBookingDoctorChange() {
+            generateAvailableSlots();
+            updateSummaryCard();
+        }
+
+        function populateBookingServicesSelect() {
+            const select = document.getElementById('book-service-select');
+            select.innerHTML = state.services.map(s => `<option value="${s.id}">${s.name} (${s.durationMinutes} min / ${s.priceCzk} Kč)</option>`).join('');
+        }
+
+        function renderClientPetsDropdown() {
+            const select = document.getElementById('book-pet-select');
+            const myPets = state.pets.filter(p => p.clientId === state.activeClient.id);
+            document.getElementById('client-pets-count').innerText = myPets.length;
+
+            if (myPets.length === 0) {
+                select.innerHTML = `<option value="">-- Nemáte registrované zvíře --</option>`;
+            } else {
+                select.innerHTML = myPets.map(p => `<option value="${p.id}">${p.name} (${p.species} - ${p.breed || 'Bez plemene'})</option>`).join('');
+            }
+        }
+
+        function generateAvailableSlots() {
+            const docId = document.getElementById('book-doctor-select').value;
+            const serviceId = document.getElementById('book-service-select').value;
+            const dateVal = document.getElementById('book-date-input').value;
+            const container = document.getElementById('slots-container');
+
+            selectedSlotTime = null;
+            container.innerHTML = '';
+
+            const service = state.services.find(s => s.id === serviceId);
+            if (!service || !dateVal) return;
+
+            document.getElementById('slot-duration-badge').innerText = `Trvání: ${service.durationMinutes} min`;
+
+            // Working hours: 08:00 to 16:00
+            const times = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30'];
+            
+            // Check existing doctor reservations for this date
+            const existingAppts = state.reservations.filter(r => r.doctorId === docId && r.date === dateVal && r.status !== 'Zrušeno');
+            
+            // Check doctor blockages for this date
+            const existingBlockages = state.blockages.filter(b => b.doctorId === docId && b.date === dateVal);
+
+            times.forEach(t => {
+                let isBlocked = false;
+
+                // Check reservation overlap
+                const occupiedByAppt = existingAppts.some(r => r.time === t);
+                
+                // Check blockage overlap
+                const occupiedByBlock = existingBlockages.some(b => t >= b.startTime && t < b.endTime);
+
+                if (occupiedByAppt || occupiedByBlock) {
+                    isBlocked = true;
+                }
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                if (isBlocked) {
+                    btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 text-slate-400 line-through cursor-not-allowed';
+                    btn.innerText = t;
+                    btn.title = 'Termín je obsazen nebo zablokován';
+                } else {
+                    btn.className = 'slot-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:border-teal-500 hover:text-teal-700 transition-all';
+                    btn.innerText = t;
+                    btn.onclick = () => selectSlot(t, btn);
+                }
+                container.appendChild(btn);
+            });
+
+            updateSummaryCard();
+        }
+
+        function selectSlot(time, element) {
+            selectedSlotTime = time;
+            document.querySelectorAll('.slot-btn').forEach(b => {
+                b.classList.remove('bg-teal-600', 'text-white', 'border-teal-600');
+                b.classList.add('bg-white', 'text-slate-700');
+            });
+            element.classList.remove('bg-white', 'text-slate-700');
+            element.classList.add('bg-teal-600', 'text-white', 'border-teal-600');
+
+            updateSummaryCard();
+        }
+
+        function updateSummaryCard() {
+            const clinicId = document.getElementById('book-clinic-select').value;
+            const docId = document.getElementById('book-doctor-select').value;
+            const serviceId = document.getElementById('book-service-select').value;
+            const petId = document.getElementById('book-pet-select').value;
+            const dateVal = document.getElementById('book-date-input').value;
+
+            const clinic = state.clinics.find(c => c.id === clinicId);
+            const doc = state.doctors.find(d => d.id === docId);
+            const service = state.services.find(s => s.id === serviceId);
+            const pet = state.pets.find(p => p.id === petId);
+
+            document.getElementById('summary-clinic').innerText = clinic ? clinic.name : '--';
+            document.getElementById('summary-doctor').innerText = doc ? doc.name : '--';
+            document.getElementById('summary-service').innerText = service ? service.name : '--';
+            document.getElementById('summary-pet').innerText = pet ? `${pet.name} (${pet.species})` : '--';
+            document.getElementById('summary-price').innerText = service ? `${service.priceCzk} Kč` : '0 Kč';
+
+            const submitBtn = document.getElementById('submit-booking-btn');
+
+            if (selectedSlotTime && dateVal && pet) {
+                document.getElementById('summary-datetime').innerText = `${formatDateCz(dateVal)} o ${selectedSlotTime}`;
+                submitBtn.disabled = false;
+                submitBtn.className = "w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer";
+            } else {
+                document.getElementById('summary-datetime').innerText = 'Vyberte slot a zvíře';
+                submitBtn.disabled = true;
+                submitBtn.className = "w-full bg-slate-300 text-slate-500 font-bold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-not-allowed";
+            }
+        }
+
+        function submitReservation() {
+            if (!selectedSlotTime) return;
+
+            const clinicId = document.getElementById('book-clinic-select').value;
+            const docId = document.getElementById('book-doctor-select').value;
+            const serviceId = document.getElementById('book-service-select').value;
+            const petId = document.getElementById('book-pet-select').value;
+            const dateVal = document.getElementById('book-date-input').value;
+            const noteVal = document.getElementById('book-note-input').value;
+
+            const pet = state.pets.find(p => p.id === petId);
+            const service = state.services.find(s => s.id === serviceId);
+            const clinic = state.clinics.find(c => c.id === clinicId);
+            const doctor = state.doctors.find(d => d.id === docId);
+
+            const newRes = {
+                id: 'res-' + Date.now(),
+                clientId: state.activeClient.id,
+                clientName: state.activeClient.name,
+                clientEmail: state.activeClient.email,
+                petId: pet.id,
+                petName: pet.name,
+                petSpecies: pet.species,
+                clinicId: clinicId,
+                doctorId: docId,
+                serviceId: serviceId,
+                serviceName: service.name,
+                date: dateVal,
+                time: selectedSlotTime,
+                durationMinutes: service.durationMinutes,
+                priceCzk: service.priceCzk,
+                status: 'Potvrzeno',
+                note: noteVal
+            };
+
+            state.reservations.push(newRes);
+            saveState();
+
+            // Simulate sending confirmation email
+            openEmailSimModal(
+                state.activeClient.email,
+                `Potvrzení rezervace - VET-CARE (${pet.name})`,
+                `Vážený kliente ${state.activeClient.name},\n\nVaše rezervace na pobočce "${clinic.name}" u lékaře ${doctor.name} byla úspěšně přijata.\n\nDetail návštěvy:\n- Pacient: ${pet.name} (${pet.species})\n- Úkon: ${service.name}\n- Termín: ${formatDateCz(dateVal)} v ${selectedSlotTime}\n- Odhadovaná cena: ${service.priceCzk} Kč\n\nTěšíme se na Vaši návštěvu!`
+            );
+
+            showToast('Rezervace byla úspěšně vytvořena!', 'success');
+            
+            // Refresh views
+            renderClientPortal();
+            showClientTab('myappointments');
+        }
+
+        function renderClientPetsList() {
+            const container = document.getElementById('pets-cards-grid');
+            const myPets = state.pets.filter(p => p.clientId === state.activeClient.id);
+
+            if (myPets.length === 0) {
+                container.innerHTML = `<div class="col-span-full p-8 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">Nemáte registrovaná žádná zvířata. Přidejte své první zvíře!</div>`;
+                return;
+            }
+
+            container.innerHTML = myPets.map(p => `
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3 relative hover:border-teal-300 transition-all">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-lg">
+                                <i class="fa-solid ${p.species === 'Pes' ? 'fa-dog' : p.species === 'Kočka' ? 'fa-cat' : 'fa-paw'}"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-900">${p.name}</h3>
+                                <p class="text-xs text-slate-500">${p.species} • ${p.breed || 'Bez plemene'}</p>
+                            </div>
+                        </div>
+                        <button onclick="deletePet('${p.id}')" title="Smazat" class="text-slate-300 hover:text-red-500 p-1"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <div class="text-xs text-slate-600 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <div><strong>Věk:</strong> ${p.age} let</div>
+                        <div><strong>Přezdívka:</strong> ${p.nickname || '-'}</div>
+                        <div><strong>Číslo čipu:</strong> <span class="font-mono">${p.chip || 'Nečipováno'}</span></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderClientAppointments() {
+            const tbody = document.getElementById('client-appointments-tbody');
+            const myAppts = state.reservations.filter(r => r.clientId === state.activeClient.id);
+            document.getElementById('client-appts-count').innerText = myAppts.length;
+
+            if (myAppts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Nemáte žádné aktivní ani minulá rezervace.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = myAppts.sort((a,b) => (b.date + b.time).localeCompare(a.date + a.time)).map(r => {
+                const clinic = state.clinics.find(c => c.id === r.clinicId);
+                const doc = state.doctors.find(d => d.id === r.doctorId);
+                return `
+                    <tr class="hover:bg-slate-50/80 transition-colors">
+                        <td class="p-4 font-semibold text-slate-900">
+                            <div>${formatDateCz(r.date)}</div>
+                            <div class="text-xs font-mono text-teal-600">${r.time} (${r.durationMinutes}m)</div>
+                        </td>
+                        <td class="p-4">
+                            <span class="font-bold text-slate-800">${r.petName}</span>
+                            <span class="text-xs text-slate-400 block">${r.petSpecies}</span>
+                        </td>
+                        <td class="p-4 text-xs font-medium text-slate-700">${r.serviceName}</td>
+                        <td class="p-4 text-xs text-slate-600">
+                            <div>${clinic ? clinic.name : '-'}</div>
+                            <div class="text-slate-400">${doc ? doc.name : '-'}</div>
+                        </td>
+                        <td class="p-4">${getStatusBadge(r.status)}</td>
+                        <td class="p-4 text-right">
+                            ${r.status !== 'Zrušeno' && r.status !== 'Dokončeno' ? `
+                                <button onclick="cancelClientAppointment('${r.id}')" class="text-xs text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg border border-red-200 transition-colors">
+                                    Zrušit
+                                </button>
+                            ` : '-'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function cancelClientAppointment(resId) {
+            const res = state.reservations.find(r => r.id === resId);
+            if (!res) return;
+
+            res.status = 'Zrušeno';
+            saveState();
+
+            // Email simulation
+            openEmailSimModal(
+                res.clientEmail,
+                `Zrušení rezervace - VET-CARE (${res.petName})`,
+                `Dobrý den,\n\nVaše rezervace na ${formatDateCz(res.date)} o ${res.time} pro zvíře ${res.petName} byla stornována.\n\nV případě potřeby nového termínu nás neváhejte kontaktovat.`
+            );
+
+            showToast('Rezervace byla stornována.', 'info');
+            renderClientPortal();
+        }
+
+        /* ========================================================================================================= */
+        /* DOCTOR DASHBOARD & AGENDA WORKFLOW LOGIC                                                                  */
+        /* ========================================================================================================= */
+        let activeMedicalPetId = null;
+
+        function renderDoctorDashboard() {
+            populateDoctorFilterDropdowns();
+
+            const docSelect = document.getElementById('doc-filter-doctor');
+            const dateInput = document.getElementById('doc-filter-date');
+            
+            if (!dateInput.value) dateInput.value = getTodayISO();
+            
+            const currentDocId = docSelect.value || state.doctors[0].id;
+            const currentDate = dateInput.value;
+
+            const docObj = state.doctors.find(d => d.id === currentDocId);
+            if (docObj) {
+                document.getElementById('doctor-dashboard-name').innerText = docObj.name;
+            }
+
+            document.getElementById('doc-agenda-date-label').innerText = formatDateCz(currentDate);
+
+            // Filter reservations for current doc & date
+            const filteredRes = state.reservations.filter(r => r.doctorId === currentDocId && r.date === currentDate);
+
+            // Counter cards
+            document.getElementById('cnt-waiting').innerText = filteredRes.filter(r => r.status === 'Čeká v čekárně').length;
+            document.getElementById('cnt-inroom').innerText = filteredRes.filter(r => r.status === 'V ordinaci').length;
+            document.getElementById('cnt-confirmed').innerText = filteredRes.filter(r => r.status === 'Potvrzeno').length;
+            document.getElementById('cnt-completed').innerText = filteredRes.filter(r => r.status === 'Dokončeno').length;
+
+            const tbody = document.getElementById('doctor-agenda-tbody');
+
+            if (filteredRes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">Na tento den nejsou pro vybraného lékaře plánováni žádní pacienti.</td></tr>`;
+            } else {
+                tbody.innerHTML = filteredRes.sort((a,b) => a.time.localeCompare(b.time)).map(r => `
+                    <tr class="hover:bg-slate-50 transition-colors ${r.status === 'V ordinaci' ? 'bg-teal-50/50' : ''}">
+                        <td class="p-3 font-mono font-bold text-slate-800">${r.time}</td>
+                        <td class="p-3">
+                            <div class="font-bold text-slate-900">${r.petName} <span class="text-xs font-normal text-slate-500">(${r.petSpecies})</span></div>
+                            <div class="text-xs text-slate-500"><i class="fa-solid fa-user text-[10px]"></i> ${r.clientName}</div>
+                            ${r.note ? `<div class="text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded mt-1 border border-amber-200"><strong>Pozn:</strong> ${r.note}</div>` : ''}
+                        </td>
+                        <td class="p-3 text-xs font-medium text-slate-700">${r.serviceName}</td>
+                        <td class="p-3">${getStatusBadge(r.status)}</td>
+                        <td class="p-3 text-right space-x-1">
+                            <!-- Status change workflow select -->
+                            <select onchange="updateReservationStatus('${r.id}', this.value)" class="text-xs p-1.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500">
+                                <option value="Potvrzeno" ${r.status === 'Potvrzeno' ? 'selected' : ''}>Potvrzeno</option>
+                                <option value="Čeká v čekárně" ${r.status === 'Čeká v čekárně' ? 'selected' : ''}>Čeká v čekárně</option>
+                                <option value="V ordinaci" ${r.status === 'V ordinaci' ? 'selected' : ''}>V ordinaci</option>
+                                <option value="Dokončeno" ${r.status === 'Dokončeno' ? 'selected' : ''}>Dokončeno</option>
+                                <option value="Zrušeno" ${r.status === 'Zrušeno' ? 'selected' : ''}>Zrušeno</option>
+                            </select>
+
+                            <button onclick="openMedicalCard('${r.petId}')" title="Otevřít zdravotní kartu" class="p-1.5 text-indigo-600 hover:bg-indigo-50 border border-indigo-200 rounded-lg transition-colors">
+                                <i class="fa-solid fa-notes-medical"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function populateDoctorFilterDropdowns() {
+            const select = document.getElementById('doc-filter-doctor');
+            if (select.children.length === 0) {
+                select.innerHTML = state.doctors.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+            }
+
+            const blockDocSelect = document.getElementById('block-doctor-select');
+            blockDocSelect.innerHTML = state.doctors.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+        }
+
+        function updateReservationStatus(resId, newStatus) {
+            const res = state.reservations.find(r => r.id === resId);
+            if (!res) return;
+
+            const oldStatus = res.status;
+            res.status = newStatus;
+            saveState();
+
+            // Automatic simulated email notification to client upon status change
+            if (oldStatus !== newStatus) {
+                openEmailSimModal(
+                    res.clientEmail,
+                    `Aktualizace stavu návštěvy: ${newStatus}`,
+                    `Dobrý den,\n\nStav Vaší rezervace pro zvíře ${res.petName} byl změněn na: "${newStatus.toUpperCase()}".\n\nDěkujeme, že využíváte VET-CARE.`
+                );
+            }
+
+            showToast(`Stav změněn na: ${newStatus}`, 'success');
+            renderDoctorDashboard();
+            if (state.currentRole === 'tv') renderTvDisplay();
+        }
+
+        function openMedicalCard(petId) {
+            activeMedicalPetId = petId;
+            const pet = state.pets.find(p => p.id === petId);
+            const client = state.activeClient; // or owner
+
+            if (!pet) return;
+
+            document.getElementById('medcard-content-empty').classList.add('hidden');
+            document.getElementById('medcard-content-active').classList.remove('hidden');
+
+            document.getElementById('medcard-pet-badge').innerText = pet.name;
+            document.getElementById('med-pet-name').innerText = `${pet.name} (${pet.species} - ${pet.breed || 'Bez plemene'})`;
+            document.getElementById('med-pet-meta').innerText = `Věk: ${pet.age} let | Čip: ${pet.chip || 'Nečipováno'}`;
+
+            renderMedicalHistoryList(petId);
+        }
+
+        function renderMedicalHistoryList(petId) {
+            const container = document.getElementById('med-history-list');
+            const records = state.medicalRecords.filter(m => m.petId === petId);
+
+            if (records.length === 0) {
+                container.innerHTML = `<div class="text-xs text-slate-400 text-center py-4">Žádné předchozí záznamy.</div>`;
+                return;
+            }
+
+            container.innerHTML = records.sort((a,b) => b.date.localeCompare(a.date)).map(m => `
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+                    <div class="flex justify-between font-bold text-slate-800">
+                        <span>${formatDateCz(m.date)}</span>
+                        <span class="text-indigo-600">${m.doctorName}</span>
+                    </div>
+                    <p class="text-slate-700">${m.notes}</p>
+                    ${m.meds ? `<div class="text-[11px] font-semibold text-emerald-700"><i class="fa-solid fa-pills mr-1"></i> ${m.meds}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function saveMedicalRecord() {
+            if (!activeMedicalPetId) return;
+
+            const notes = document.getElementById('med-input-notes').value.trim();
+            const meds = document.getElementById('med-input-meds').value.trim();
+
+            if (!notes) {
+                showToast('Zadejte klinický nález', 'warning');
+                return;
+            }
+
+            const docSelect = document.getElementById('doc-filter-doctor');
+            const currentDoc = state.doctors.find(d => d.id === docSelect.value) || state.doctors[0];
+
+            const newRecord = {
+                id: 'med-' + Date.now(),
+                petId: activeMedicalPetId,
+                date: getTodayISO(),
+                doctorName: currentDoc.name,
+                notes: notes,
+                meds: meds
+            };
+
+            state.medicalRecords.push(newRecord);
+            saveState();
+
+            document.getElementById('med-input-notes').value = '';
+            document.getElementById('med-input-meds').value = '';
+
+            showToast('Lékařský záznam byl uložen', 'success');
+            renderMedicalHistoryList(activeMedicalPetId);
+        }
+
+        /* ========================================================================================================= */
+        /* ADMIN DASHBOARD (N:M Doctors-Clinics Mapping & Services Manager)                                        */
+        /* ========================================================================================================= */
+        function renderAdminDashboard() {
+            renderAdminClinics();
+            renderAdminServices();
+        }
+
+        function renderAdminClinics() {
+            const container = document.getElementById('admin-clinics-list');
+            container.innerHTML = state.clinics.map(c => `
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-bold text-slate-900">${c.name}</h4>
+                            <p class="text-xs text-slate-500">${c.address} | IČO: <span class="font-mono">${c.ico}</span></p>
+                        </div>
+                        <span class="text-xs bg-teal-100 text-teal-800 font-bold px-2 py-0.5 rounded">Tel: ${c.phone}</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Přiřazení Veterináři (N:M Vazba):</label>
+                        <div class="flex flex-wrap gap-2">
+                            ${state.doctors.map(d => {
+                                const isAssigned = c.doctors.includes(d.id);
+                                return `
+                                    <label class="inline-flex items-center gap-1.5 text-xs bg-white border border-slate-200 px-2.5 py-1 rounded-lg cursor-pointer">
+                                        <input type="checkbox" ${isAssigned ? 'checked' : ''} onchange="toggleDoctorClinicMapping('${c.id}', '${d.id}', this.checked)" class="rounded text-teal-600 focus:ring-teal-500">
+                                        <span>${d.name}</span>
+                                    </label>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleDoctorClinicMapping(clinicId, doctorId, isChecked) {
+            const clinic = state.clinics.find(c => c.id === clinicId);
+            if (!clinic) return;
+
+            if (isChecked) {
+                if (!clinic.doctors.includes(doctorId)) clinic.doctors.push(doctorId);
+            } else {
+                clinic.doctors = clinic.doctors.filter(id => id !== doctorId);
+            }
+
+            saveState();
+            showToast('N:M vazba ordinace-lékař byla aktualizována', 'info');
+        }
+
+        function renderAdminServices() {
+            const tbody = document.getElementById('admin-services-tbody');
+            tbody.innerHTML = state.services.map(s => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 font-semibold text-slate-800">${s.name}</td>
+                    <td class="p-3">
+                        <input type="number" value="${s.durationMinutes}" onchange="updateServiceDuration('${s.id}', this.value)" class="w-16 p-1 border rounded text-xs text-center font-mono focus:ring-2 focus:ring-teal-500">
+                    </td>
+                    <td class="p-3 font-mono text-teal-700 font-bold">${s.priceCzk} Kč</td>
+                    <td class="p-3 text-right">
+                        <button onclick="deleteService('${s.id}')" class="text-xs text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateServiceDuration(serviceId, newDuration) {
+            const service = state.services.find(s => s.id === serviceId);
+            if (!service) return;
+
+            service.durationMinutes = parseInt(newDuration) || 15;
+            saveState();
+            showToast(`Délka úkonu "${service.name}" upravena na ${service.durationMinutes} min`, 'success');
+        }
+
+        /* ========================================================================================================= */
+        /* WAITING ROOM TV BROADCAST DISPLAY LOGIC                                                                   */
+        /* ========================================================================================================= */
+        function renderTvDisplay() {
+            const today = getTodayISO();
+            const todayRes = state.reservations.filter(r => r.date === today && r.status !== 'Zrušeno');
+
+            // Current in room
+            const current = todayRes.find(r => r.status === 'V ordinaci');
+            const currentBox = document.getElementById('tv-current-patient');
+
+            if (current) {
+                currentBox.innerHTML = `
+                    <div class="text-5xl font-black text-white tracking-tight">${current.petName}</div>
+                    <div class="text-lg text-teal-300 font-semibold">${getGdprOwnerName(current.clientName)}</div>
+                    <div class="text-xs text-slate-400 mt-2 font-mono">${current.serviceName}</div>
+                `;
+            } else {
+                currentBox.innerHTML = `
+                    <div class="text-2xl text-slate-500 italic">V ordinaci aktuálně nepřenosuje žádný pacient.</div>
+                `;
+            }
+
+            // Next patient
+            const next = todayRes.find(r => r.status === 'Čeká v čekárně');
+            const nextBox = document.getElementById('tv-next-patient');
+
+            if (next) {
+                nextBox.innerHTML = `
+                    <div class="text-3xl font-bold text-amber-300">${next.petName}</div>
+                    <div class="text-sm text-slate-300 font-medium">${getGdprOwnerName(next.clientName)}</div>
+                    <div class="text-xs text-slate-400 mt-2 font-mono">Předpokládaný čas: ${next.time}</div>
+                `;
+            } else {
+                nextBox.innerHTML = `
+                    <div class="text-lg text-slate-500 italic">Žádný pacient nečeká v řadě.</div>
+                `;
+            }
+
+            // Upcoming queue list
+            const queueList = todayRes.filter(r => r.status === 'Potvrzeno');
+            const queueBox = document.getElementById('tv-queue-list');
+
+            if (queueList.length === 0) {
+                queueBox.innerHTML = `<div class="text-xs text-slate-500 italic">Žádné další rezervace pro dnešní den.</div>`;
+            } else {
+                queueBox.innerHTML = queueList.map(r => `
+                    <div class="flex items-center justify-between p-3 bg-slate-800/60 rounded-xl border border-slate-800">
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono text-teal-400 text-xs font-bold">${r.time}</span>
+                            <span class="font-bold text-sm text-white">${r.petName}</span>
+                            <span class="text-xs text-slate-400">(${getGdprOwnerName(r.clientName)})</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 font-mono">${r.petSpecies}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function getGdprOwnerName(fullName) {
+            if (!fullName) return '';
+            const parts = fullName.trim().split(' ');
+            if (parts.length >= 2) {
+                return `${parts[0].charAt(0)}. ${parts[parts.length - 1]}`;
+            }
+            return fullName.charAt(0) + '.';
+        }
+
+        /* ========================================================================================================= */
+        /* MODALS & POPUPS MANAGERS                                                                                  */
+        /* ========================================================================================================= */
+        function openPetModal() {
+            document.getElementById('modal-pet').classList.remove('hidden');
+        }
+
+        function closePetModal() {
+            document.getElementById('modal-pet').classList.add('hidden');
+        }
+
+        function handleSavePet(e) {
+            e.preventDefault();
+            const name = document.getElementById('pet-input-name').value.trim();
+            const species = document.getElementById('pet-input-species').value;
+            const breed = document.getElementById('pet-input-breed').value.trim();
+            const nickname = document.getElementById('pet-input-nickname').value.trim();
+            const age = parseInt(document.getElementById('pet-input-age').value) || 1;
+            const chip = document.getElementById('pet-input-chip').value.trim();
+
+            const newPet = {
+                id: 'pet-' + Date.now(),
+                clientId: state.activeClient.id,
+                name, species, breed, nickname, age, chip
+            };
+
+            state.pets.push(newPet);
+            saveState();
+
+            closePetModal();
+            showToast(`Zvíře ${name} bylo úspěšně vytvořeno!`, 'success');
+            renderClientPortal();
+        }
+
+        function deletePet(petId) {
+            state.pets = state.pets.filter(p => p.id !== petId);
+            saveState();
+            showToast('Zvíře bylo odebráno', 'info');
+            renderClientPortal();
+        }
+
+        function openBlockageModal() {
+            populateDoctorFilterDropdowns();
+            document.getElementById('block-date-input').value = getTodayISO();
+            document.getElementById('modal-blockage').classList.remove('hidden');
+        }
+
+        function closeBlockageModal() {
+            document.getElementById('modal-blockage').classList.add('hidden');
+        }
+
+        function handleSaveBlockage(e) {
+            e.preventDefault();
+            const docId = document.getElementById('block-doctor-select').value;
+            const reason = document.getElementById('block-reason-input').value.trim();
+            const date = document.getElementById('block-date-input').value;
+            const startTime = document.getElementById('block-start-time').value;
+            const endTime = document.getElementById('block-end-time').value;
+
+            const newBlock = {
+                id: 'blk-' + Date.now(),
+                doctorId: docId,
+                date, startTime, endTime, reason
+            };
+
+            state.blockages.push(newBlock);
+            saveState();
+
+            closeBlockageModal();
+            showToast('Blokace byla uložena do kalendáře', 'warning');
+            renderDoctorDashboard();
+        }
+
+        function openEmailSimModal(to, subject, body) {
+            document.getElementById('email-sim-to').innerText = to;
+            document.getElementById('email-sim-subject').innerText = subject;
+            document.getElementById('email-sim-body').innerText = body;
+            document.getElementById('modal-email-sim').classList.remove('hidden');
+        }
+
+        function closeEmailSimModal() {
+            document.getElementById('modal-email-sim').classList.add('hidden');
+        }
+
+        /* ========================================================================================================= */
+        /* UTILITIES & HELPER FUNCTIONS                                                                              */
+        /* ========================================================================================================= */
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'V ordinaci':
+                    return `<span class="bg-teal-100 text-teal-800 font-bold text-xs px-2.5 py-1 rounded-full border border-teal-200 animate-pulse"><i class="fa-solid fa-stethoscope mr-1"></i>V ordinaci</span>`;
+                case 'Čeká v čekárně':
+                    return `<span class="bg-amber-100 text-amber-800 font-bold text-xs px-2.5 py-1 rounded-full border border-amber-200"><i class="fa-solid fa-hourglass-half mr-1"></i>V čekárně</span>`;
+                case 'Potvrzeno':
+                    return `<span class="bg-blue-100 text-blue-800 font-medium text-xs px-2.5 py-1 rounded-full border border-blue-200"><i class="fa-solid fa-circle-check mr-1"></i>Potvrzeno</span>`;
+                case 'Dokončeno':
+                    return `<span class="bg-emerald-100 text-emerald-800 font-medium text-xs px-2.5 py-1 rounded-full border border-emerald-200"><i class="fa-solid fa-check-double mr-1"></i>Dokončeno</span>`;
+                case 'Zrušeno':
+                    return `<span class="bg-rose-100 text-rose-800 font-medium text-xs px-2.5 py-1 rounded-full border border-rose-200"><i class="fa-solid fa-ban mr-1"></i>Zrušeno</span>`;
+                default:
+                    return `<span class="bg-slate-100 text-slate-700 font-medium text-xs px-2.5 py-1 rounded-full">${status}</span>`;
+            }
+        }
+
+        function formatDateCz(isoDate) {
+            if (!isoDate) return '';
+            const parts = isoDate.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}. ${parts[1]}. ${parts[0]}`;
+            }
+            return isoDate;
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'success' ? 'bg-emerald-800 text-white' :
+                            type === 'warning' ? 'bg-amber-800 text-white' :
+                            type === 'info' ? 'bg-slate-800 text-white' : 'bg-rose-800 text-white';
+
+            toast.className = `${bgClass} pointer-events-auto p-3.5 rounded-xl shadow-xl border border-white/10 text-xs font-semibold flex items-center gap-2 transition-all transform translate-y-2 opacity-0`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        /* Live Realtime Clock Updates */
+        function updateClocks() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('cs-CZ');
+            
+            const headerClock = document.getElementById('header-time');
+            if (headerClock) headerClock.innerText = timeStr;
+
+            const tvClock = document.getElementById('tv-clock');
+            if (tvClock) tvClock.innerText = timeStr;
+
+            const tvDate = document.getElementById('tv-date');
+            if (tvDate) {
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                tvDate.innerText = now.toLocaleDateString('cs-CZ', options);
+            }
+        }
+
+        /* Initializer */
+        function initApp() {
+            updateClocks();
+            setInterval(updateClocks, 1000);
+
+            switchRole(state.currentRole || 'client');
+        }
+
+        window.onload = function() {
+            initApp();
+        };
+    </script>
+</body>
+</html>

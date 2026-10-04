@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VetCare - Panel Lékaře</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="themes.css">
+    <script src="theme.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Navigace -->
+    <nav class="bg-slate-900 text-white px-6 py-3 flex justify-between items-center shadow-md relative z-50">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('view-rezervace')">
+            <i class="fa-solid fa-user-doctor text-emerald-400 text-2xl"></i>
+            <span class="font-bold text-xl tracking-wide">VET-CARE | Ordinační Přehled</span>
+        </div>
+
+        <div class="relative group py-2">
+            <button class="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-xl transition duration-150 focus:outline-none border border-slate-700">
+                <i class="fa-solid fa-circle-user text-xl text-emerald-400"></i>
+                <span id="doc-name" class="font-medium text-sm text-emerald-400">Načítání...</span>
+                <i class="fa-solid fa-chevron-down text-xs opacity-75"></i>
+            </button>
+
+            <div class="hidden group-hover:block absolute right-0 top-full w-64 bg-white text-gray-800 rounded-2xl shadow-xl border border-gray-100 py-2 mt-0 z-50 overflow-hidden">
+                <div class="px-4 py-2 border-b border-gray-100 bg-gray-50">
+                    <p class="text-xs text-gray-500">Přihlášený lékař</p>
+                    <p id="doc-email-display" class="text-xs font-bold truncate text-gray-700"></p>
+                </div>
+
+                <a href="#" onclick="switchView('view-rezervace'); return false;" class="flex items-center px-4 py-2.5 text-sm font-medium hover:bg-emerald-50 hover:text-emerald-700 transition">
+                    <i class="fa-solid fa-calendar-check w-6 text-emerald-600"></i> Seznam rezervací
+                </a>
+                <a href="#" onclick="switchView('view-nepritomnost'); return false;" class="flex items-center px-4 py-2.5 text-sm font-medium hover:bg-emerald-50 hover:text-emerald-700 transition">
+                    <i class="fa-solid fa-user-slash w-6 text-emerald-600"></i> Nepřítomnost
+                </a>
+                <a href="#" onclick="switchView('view-nastaveni'); return false;" class="flex items-center px-4 py-2.5 text-sm font-medium hover:bg-emerald-50 hover:text-emerald-700 transition">
+                    <i class="fa-solid fa-sliders w-6 text-emerald-600"></i> Nastavení uživatele
+                </a>
+
+                <div class="border-t border-gray-100 my-1"></div>
+
+                <a href="#" onclick="logout(); return false;" class="flex items-center px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 transition">
+                    <i class="fa-solid fa-right-from-bracket w-6"></i> Odhlásit se
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hlavní obsah -->
+    <main class="max-w-7xl w-full mx-auto p-6 flex-grow">
+
+        <!-- SEKCE 1: SEZNAM REZERVACÍ A KALENDÁŘE -->
+        <section id="view-rezervace" class="view-section">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                
+                <!-- HORNÍ LIŠTA: NADPIS, PŘEPÍNAČ POHLEDŮ A TLAČÍTKA NAVIGACE -->
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between border-b pb-4 mb-6 gap-4">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-calendar-days text-emerald-600 text-2xl"></i>
+                        <h2 id="calendar-title" class="text-xl font-bold text-slate-800">Seznam rezervací na zvolený den</h2>
+                    </div>
+
+                    <!-- PŘEPÍNAČ POHLEDŮ (DAY / WEEK / MONTH) -->
+                    <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <button id="btn-mode-day" onclick="setReservationMode('day')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition bg-white text-emerald-700 shadow-sm">
+                            <i class="fa-solid fa-list-ul mr-1"></i> Den
+                        </button>
+                        <button id="btn-mode-week" onclick="setReservationMode('week')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition text-slate-600 hover:text-slate-900">
+                            <i class="fa-solid fa-calendar-week mr-1"></i> Týden
+                        </button>
+                        <button id="btn-mode-month" onclick="setReservationMode('month')" class="px-3 py-1.5 text-xs font-bold rounded-lg transition text-slate-600 hover:text-slate-900">
+                            <i class="fa-solid fa-calendar-grid mr-1"></i> Měsíc
+                        </button>
+                    </div>
+
+                    <!-- NAVIGACE V ČASE -->
+                    <div class="flex items-center space-x-2">
+                        <button onclick="navigateCalendar(-1)" class="p-2 border rounded-xl hover:bg-slate-50 text-slate-600 transition" title="Předchozí">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </button>
+                        <button onclick="navigateCalendarToToday()" class="px-3 py-2 border rounded-xl hover:bg-slate-50 text-xs font-bold text-slate-700 transition">
+                            Dnes
+                        </button>
+                        <button onclick="navigateCalendar(1)" class="p-2 border rounded-xl hover:bg-slate-50 text-slate-600 transition" title="Následující">
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                        <input type="date" id="doc-filter-date" onchange="loadAgenda()" class="p-2 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- POHLED 1: DENNÍ SEZNAM (TABULKA) -->
+                <div id="subview-day" class="calendar-subview overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 border-b text-xs uppercase text-slate-500 font-bold">
+                                <th class="p-3">Čas</th>
+                                <th class="p-3">Pacient</th>
+                                <th class="p-3">Majitel / Kontakt</th>
+                                <th class="p-3">Úkon</th>
+                                <th class="p-3">Stav</th>
+                                <th class="p-3 text-right">Akce</th>
+                            </tr>
+                        </thead>
+                        <tbody id="doc-agenda-table" class="divide-y divide-gray-100">
+                            <tr><td colspan="6" class="p-4 text-center text-gray-400">Načítání agendy...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- POHLED 2: TÝDENNÍ KALENDÁŘ (OUTLOOK STYLE S HODINAMI) -->
+                <div id="subview-week" class="calendar-subview hidden overflow-x-auto">
+                    <div class="min-w-[1000px] border rounded-2xl overflow-hidden bg-white shadow-sm">
+                        <!-- Hlavička kalendáře s dny v týdnu a sloupci pro hodiny vlevo i vpravo -->
+                        <div class="grid grid-cols-[60px_repeat(7,1fr)_60px] bg-slate-50 border-b text-center py-2.5 text-xs font-bold text-slate-600 divide-x divide-slate-200" id="week-calendar-header">
+                            <!-- Vygeneruje JS (Čas vlevo + 7 dní + Čas vpravo) -->
+                        </div>
+
+                        <!-- Tělo kalendáře s hodinovými řádky a sloupci -->
+                        <div class="grid grid-cols-[60px_repeat(7,1fr)_60px] divide-x divide-gray-200 relative bg-white" id="week-calendar-body">
+                            <!-- Vygeneruje JS (Včetně časové osy vpravo a vlevo) -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- POHLED 2b: TÝDEN PRO MOBIL (dny pod sebou, časová osa vpravo) -->
+                <div id="subview-week-mobile" class="calendar-subview hidden">
+                    <div id="week-mobile-body" class="space-y-4"></div>
+                </div>
+
+                <!-- POHLED 3: MĚSÍČNÍ KALENDÁŘ -->
+                <div id="subview-month" class="calendar-subview hidden overflow-x-auto">
+                    <div class="min-w-[900px] border rounded-2xl overflow-hidden bg-white shadow-sm">
+                        <!-- Dny v týdnu -->
+                        <div class="grid grid-cols-7 bg-slate-50 border-b text-center py-2.5 text-xs font-bold text-slate-600">
+                            <div>Pondělí</div>
+                            <div>Úterý</div>
+                            <div>Středa</div>
+                            <div>Čtvrtek</div>
+                            <div>Pátek</div>
+                            <div>Sobota</div>
+                            <div>Neděle</div>
+                        </div>
+                        <!-- Mřížka dní (buňky se vygenerují v JS s výškou min-h-[200px]) -->
+                        <div class="grid grid-cols-7 bg-slate-200 gap-[1px]" id="month-calendar-body">
+                            <!-- Vygeneruje JS -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SEKCE 2: NEPŘÍTOMNOST -->
+        <section id="view-nepritomnost" class="view-section hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
+                    <h2 class="text-lg font-bold text-slate-800 border-b pb-3 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-minus text-emerald-600"></i> Zadání nepřítomnosti
+                    </h2>
+                    <form onsubmit="saveAbsence(event)" class="space-y-4">
+                        <div class="flex gap-4 border-b pb-3">
+                            <label class="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-700">
+                                <input type="radio" name="abs-mode" value="single" checked onchange="toggleAbsenceMode()" class="text-emerald-600 focus:ring-emerald-500">
+                                Jeden den
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-700">
+                                <input type="radio" name="abs-mode" value="range" onchange="toggleAbsenceMode()" class="text-emerald-600 focus:ring-emerald-500">
+                                Více dní (interval)
+                            </label>
+                        </div>
+
+                        <div id="abs-single-container">
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Datum</label>
+                            <input type="date" id="abs-datum" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+
+                        <div id="abs-range-container" class="grid grid-cols-2 gap-3 hidden">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Datum Od</label>
+                                <input type="date" id="abs-datum-od" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Datum Do</label>
+                                <input type="date" id="abs-datum-do" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div id="abs-time-wrapper">
+                            <div class="flex items-center space-x-2 py-1">
+                                <input type="checkbox" id="abs-celodenni" checked onchange="toggleAbsenceTimes()" class="w-4 h-4 text-emerald-600 rounded">
+                                <label for="abs-celodenni" class="text-sm font-medium text-gray-700">Celodenní nepřítomnost</label>
+                            </div>
+
+                            <div id="abs-time-container" class="grid grid-cols-2 gap-3 hidden">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Od</label>
+                                    <input type="time" id="abs-cas-od" class="w-full p-2 border rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Do</label>
+                                    <input type="time" id="abs-cas-do" class="w-full p-2 border rounded-xl text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Důvod (volitelné)</label>
+                            <input type="text" id="abs-duvod" placeholder="Dovolená, školení, nemoc..." class="w-full p-2.5 border rounded-xl text-sm">
+                        </div>
+
+                        <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition shadow-md">
+                            Uložit nepřítomnost
+                        </button>
+                    </form>
+                </div>
+
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-lg font-bold text-slate-800 border-b pb-3 mb-4">Plánované nepřítomnosti</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 border-b text-xs uppercase text-slate-500 font-bold">
+                                    <th class="p-3">Datum</th>
+                                    <th class="p-3">Rozsah</th>
+                                    <th class="p-3">Důvod</th>
+                                    <th class="p-3 text-right">Akce</th>
+                                </tr>
+                            </thead>
+                            <tbody id="absences-table-body" class="divide-y divide-gray-100">
+                                <tr><td colspan="4" class="p-4 text-center text-gray-400">Načítání...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEKCE 3: NASTAVENÍ UŽIVATELE -->
+        <section id="view-nastaveni" class="view-section hidden">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 max-w-4xl mx-auto">
+                <h2 class="text-xl font-bold text-slate-800 border-b pb-3 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-user-gear text-emerald-600"></i> Profil a Ordinační Doba Lékaře
+                </h2>
+
+                <form onsubmit="saveDoctorProfile(event)" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Titul</label>
+                            <input type="text" id="prof-titul" placeholder="MVDr." class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Jméno</label>
+                            <input type="text" id="prof-jmeno" required class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Příjmení</label>
+                            <input type="text" id="prof-prijmeni" required class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">E-mail</label>
+                            <input type="email" id="prof-email" required class="w-full p-2.5 border rounded-xl text-sm bg-gray-50 text-gray-500 cursor-not-allowed" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Telefon</label>
+                            <input type="tel" id="prof-telefon" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Specializace</label>
+                        <input type="text" id="prof-specializace" placeholder="Chirurgie, Stomatologie, Malá zvířata..." class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+
+                    <div class="border-t pt-4">
+                        <h3 class="font-bold text-sm text-slate-700 uppercase mb-3">Ordinační Doba (Dopoledne / Odpoledne)</h3>
+                        <div class="space-y-3" id="working-hours-container"></div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition">
+                        Uložit Změny Profilu
+                    </button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODÁLNÍ OKNO PRO DETAIL REZERVACE V KALENDÁŘI -->
+    <div id="detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-check text-emerald-600"></i> Detail rezervace
+                </h3>
+                <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div id="detail-modal-body" class="space-y-3 text-sm text-slate-700 mb-6">
+                <!-- Dynamicky naplněný obsah detailu -->
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2 border-t">
+                <button type="button" onclick="closeDetailModal()" class="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-xl hover:bg-slate-600 hover:text-white transition">Zavřít</button>
+                <button type="button" id="btn-modal-email" class="px-3 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-sm font-bold rounded-xl transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-envelope"></i> E-mail
+                </button>
+                <button type="button" id="btn-modal-cancel" class="px-3 py-2 bg-red-50 text-red-700 hover:bg-red-100 text-sm font-bold rounded-xl transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-xmark"></i> Zrušit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODÁLNÍ OKNO PRO ZRUŠENÍ REZERVACE S E-MAILEM -->
+    <div id="cancel-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Zrušit rezervaci
+                </h3>
+                <button onclick="closeCancelModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <p class="text-xs text-gray-500 mb-4">Klientovi bude automaticky odeslán e-mail s informací o stornování objednávky.</p>
+            
+            <form onsubmit="confirmCancelBooking(event)" class="space-y-4">
+                <input type="hidden" id="cancel-booking-id">
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Předmět E-mailu</label>
+                    <input type="text" id="cancel-email-subject" required value="Zrušení rezervace - VetCare Ordinace" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Důvod Zrušení (pro klienta)</label>
+                    <textarea id="cancel-email-reason" rows="3" required placeholder="Napište klientovi důvod zrušení (např. akutní operační zákrok, nemoc)..." class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeCancelModal()" class="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-xl hover:bg-gray-50 transition">Storno</button>
+                    <button type="submit" id="btn-submit-cancel" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-paper-plane text-xs"></i> Odeslat a Zrušit
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODÁLNÍ OKNO PRO ODESLÁNÍ INFORMAČNÍHO E-MAILU -->
+    <div id="email-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-envelope text-emerald-600"></i> Odeslat e-mail zákazníkovi
+                </h3>
+                <button onclick="closeEmailModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <form onsubmit="sendInfoEmail(event)" class="space-y-4">
+                <input type="hidden" id="email-booking-id">
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Příjemce</label>
+                    <input type="text" id="email-recipient-name" readonly class="w-full p-2.5 border rounded-xl text-sm bg-gray-50 text-gray-500 cursor-not-allowed">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Předmět E-mailu</label>
+                    <input type="text" id="email-subject" required placeholder="Napište předmět e-mailu..." class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Zpráva</label>
+                    <textarea id="email-message" rows="4" required placeholder="Napište zprávu pro zákazníka..." class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeEmailModal()" class="px-4 py-2 border border-gray-200 text-gray-600 text-sm font-semibold rounded-xl hover:bg-gray-50 transition">Storno</button>
+                    <button type="submit" id="btn-submit-email" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-paper-plane text-xs"></i> Odeslat E-mail
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Vložení JavaScript souboru -->
+    <script src="doctor.js"></script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="cs" data-page="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VetCare - Portál Klienta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="themes.css">
+    <script src="theme.js"></script>
+    <script src="i18n.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Navigace -->
+    <nav class="bg-emerald-700 text-white px-6 py-3 flex justify-between items-center shadow-md relative z-50">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('nova-rezervace')">
+            <i class="fa-solid fa-paw text-2xl"></i>
+            <span class="font-bold text-xl tracking-wide">VET-CARE | Můj Účet</span>
+        </div>
+
+        <!-- Uživatelský profil s rozevíratelným menu po najetí (hover) -->
+        <div class="relative group py-2">
+            <button class="flex items-center space-x-2 bg-emerald-800 hover:bg-emerald-900 px-3 py-2 rounded-xl transition duration-150 focus:outline-none">
+                <i class="fa-solid fa-circle-user text-xl"></i>
+                <span id="user-display-name" class="font-medium text-sm">Načítání...</span>
+                <i class="fa-solid fa-chevron-down text-xs opacity-75"></i>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div class="hidden group-hover:block absolute right-0 top-full w-60 bg-white text-gray-800 rounded-2xl shadow-xl border border-gray-100 py-2 mt-0 z-50 overflow-hidden">
+                <div class="px-4 py-2 border-b border-gray-100 bg-gray-50">
+                    <p class="text-xs text-gray-500">Přihlášený uživatel</p>
+                    <p id="user-email-display" class="text-xs font-bold truncate text-gray-700"></p>
+                </div>
+
+                <a href="#" onclick="switchView('vytvorene-rezervace'); return false;" class="flex items-center px-4 py-2.5 text-sm font-medium hover:bg-emerald-50 hover:text-emerald-700 transition">
+                    <i class="fa-solid fa-calendar-check w-6 text-emerald-600"></i> Vytvořené rezervace
+                </a>
+                <a href="#" onclick="switchView('moje-zvirata'); return false;" class="flex items-center px-4 py-2.5 text-sm font-medium hover:bg-emerald-50 hover:text-emerald-700 transition">
+                    <i class="fa-solid fa-dog w-6 text-emerald-600"></i> Moje zvířata
+                </a>
+                <a href="#" onclick="switchView('nova-rezervace'); return false;" class="flex items-center px-4 py-2.5 text-sm font-medium hover:bg-emerald-50 hover:text-emerald-700 transition">
+                    <i class="fa-solid fa-calendar-plus w-6 text-emerald-600"></i> Vytvoření rezervace
+                </a>
+
+                <div class="border-t border-gray-100 my-1"></div>
+
+                <a href="#" onclick="logout(); return false;" class="flex items-center px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 transition">
+                    <i class="fa-solid fa-right-from-bracket w-6"></i> Odhlásit se
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hlavní obsah -->
+    <main class="max-w-6xl w-full mx-auto p-6 flex-grow">
+
+        <!-- ================= SEKCE 1: VYTVOŘENÉ REZERVACE ================= -->
+        <section id="view-vytvorene-rezervace" class="view-section space-y-8 p-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex flex-col md:flex-row md:items-center justify-between border-b pb-4 mb-6 gap-4">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-calendar-check text-emerald-600 text-2xl"></i>
+                        <h2 class="text-xl font-bold text-gray-800">Moje vytvořené rezervace</h2>
+                    </div>
+
+                    <!-- Filtry podle statusu -->
+                    <div class="flex flex-wrap gap-2" id="status-filter-buttons">
+                        <button onclick="loadBookings('vse')" class="filter-btn active-filter px-3 py-1.5 text-xs font-bold rounded-lg border bg-emerald-600 text-white" data-status="vse">Všechny</button>
+                        <button onclick="loadBookings('Plánovaná')" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-lg border bg-white text-gray-600 hover:bg-gray-50" data-status="Plánovaná">Plánované</button>
+                        <button onclick="loadBookings('Proběhlá')" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-lg border bg-white text-gray-600 hover:bg-gray-50" data-status="Proběhlá">Proběhlé</button>
+                        <button onclick="loadBookings('Storno')" class="filter-btn px-3 py-1.5 text-xs font-bold rounded-lg border bg-white text-gray-600 hover:bg-gray-50" data-status="Storno">Stornované</button>
+                    </div>
+                </div>
+
+                <!-- Tabulka rezervací z DB -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-600">
+                        <thead class="bg-gray-50 text-xs uppercase font-bold text-gray-500 border-b">
+                            <tr>
+                                <th class="p-3">Datum a čas</th>
+                                <th class="p-3">Zvíře</th>
+                                <th class="p-3">Lékař / Ordinace</th>
+                                <th class="p-3">Úkon</th>
+                                <th class="p-3">Stav</th>
+                                <th class="p-3 text-right">Akce</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookings-table-body" class="divide-y divide-gray-100">
+                            <tr><td colspan="6" class="p-4 text-center text-gray-400">Načítání rezervací...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SEKCE 2: VYTVOŘENÍ REZERVACE ================= -->
+        <section id="view-nova-rezervace" class="view-section space-y-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 max-w-3xl mx-auto">
+                <div class="flex items-center space-x-3 border-b pb-4 mb-6">
+                    <i class="fa-solid fa-calendar-plus text-emerald-600 text-2xl"></i>
+                    <h2 class="text-xl font-bold text-gray-800">Nová Rezervace</h2>
+                </div>
+
+                <form id="client-booking-form" onsubmit="submitBooking(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Ordinace / Pobočka</label>
+                        <select id="sel-ordinace" onchange="onOrdinaceChange()" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none" required></select>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Lékař</label>
+                            <select id="sel-lekar" onchange="loadSlots()" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none" required></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Typ Úkonu</label>
+                            <select id="sel-ukon" onchange="loadSlots()" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none" required></select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Datum</label>
+                            <input type="date" id="sel-datum" onchange="loadSlots()" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Moje Zvíře</label>
+                            <select id="sel-zvire" class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none" required></select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Poznámka pro lékaře (volitelné)</label>
+                        <input type="text" id="sel-poznamka" placeholder="Důvod návštěvy..." class="w-full p-2.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Volné časové sloty</label>
+                        <div id="slots-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 p-3 bg-gray-50 rounded-xl border min-h-[60px] items-center">
+                            <span class="text-xs text-gray-400 col-span-full text-center">Vyberte lékaře, úkon a datum pro zobrazení slotů</span>
+                        </div>
+                        <input type="hidden" id="selected-slot" required>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition duration-200">
+                        Odeslat Rezervaci
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ================= SEKCE 3: MOJE ZVÍŘATA ================= -->
+        <section id="view-moje-zvirata" class="view-section hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Seznam zvířat z DB -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex items-center justify-between border-b pb-4 mb-4">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-dog text-emerald-600 text-2xl"></i>
+                            <h2 class="text-xl font-bold text-gray-800">Moje zvířata</h2>
+                        </div>
+                        <span id="pet-count-badge" class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">0 zvířat</span>
+                    </div>
+
+                    <div id="pets-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <p class="text-gray-400 text-sm col-span-full">Načítání zvířat...</p>
+                    </div>
+                </div>
+
+                <!-- Formulář pro přidání zvířete -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
+                    <h3 class="font-bold text-lg mb-4 text-gray-800 border-b pb-2">Přidat nové zvíře</h3>
+                    <form onsubmit="addPet(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Jméno zvířete</label>
+                            <input type="text" id="pet-jmeno" placeholder="např. Alík" required class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Druh</label>
+                            <input type="text" id="pet-druh" placeholder="např. Pes, Kočka, Králík" required class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Rasa / Plemeno</label>
+                            <input type="text" id="pet-rasa" placeholder="např. Zlatý retrívr" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Věk (v letech)</label>
+                            <input type="number" id="pet-vek" min="0" max="50" placeholder="např. 3" class="w-full p-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <button type="submit" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold rounded-xl transition">
+                            Uložit zvíře
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Vložení JavaScript souboru -->
+    <script src="client.js"></script>
+</body>
+</html>

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="cs" data-page="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VetCare - Správa Databáze</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="themes.css">
+    <script src="theme.js"></script>
+    <script src="i18n.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Horní navigace -->
+    <nav class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-database text-emerald-400 text-2xl"></i>
+            <span class="font-bold text-xl tracking-wide">VET-CARE | Správa Databáze</span>
+        </div>
+        <button onclick="logout()" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-bold transition">
+            Odhlásit
+        </button>
+    </nav>
+
+    <!-- Hlavní kontejner -->
+    <div class="flex flex-grow overflow-hidden">
+        
+        <!-- Boční panel se seznamem tabulek -->
+        <aside class="w-64 bg-slate-800/50 border-r border-slate-700 p-4 flex flex-col">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Tabulky v Databázi</h2>
+            <div id="tables-list" class="space-y-1 overflow-y-auto flex-grow">
+                <div class="text-xs text-slate-500 p-2">Načítání tabulek...</div>
+            </div>
+        </aside>
+
+        <!-- Hlavní editační okno -->
+        <main class="flex-grow p-6 overflow-x-auto">
+            <div id="table-header" class="mb-4 flex justify-between items-center hidden">
+                <div class="flex items-center space-x-3">
+                    <h1 id="active-table-title" class="text-xl font-bold text-emerald-400 font-mono"></h1>
+                    <span id="row-count" class="text-xs bg-slate-800 px-3 py-1 rounded-lg border border-slate-700 text-slate-400"></span>
+                </div>
+                <button onclick="openCreateModal()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 shadow-lg">
+                    <i class="fa-solid fa-plus"></i> Přidat nový záznam
+                </button>
+            </div>
+
+            <div id="data-container" class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+                <div class="p-8 text-center text-slate-500">
+                    <i class="fa-solid fa-table-cells text-4xl mb-3 block"></i>
+                    Vyberte tabulku z levého menu pro zobrazení a editaci dat.
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal pro vytvoření / úpravu řádku -->
+    <div id="edit-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-slate-800 border border-slate-700 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            <h3 id="modal-title" class="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                <!-- Dynamický nadpis s ikonou -->
+            </h3>
+            <form id="edit-form" onsubmit="saveRowChanges(event)" class="space-y-3 overflow-y-auto flex-grow pr-2">
+                <!-- Dynamická pole formuláře -->
+            </form>
+            <div class="flex justify-end space-x-3 pt-3 border-t border-slate-700">
+                <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-bold">Zrušit</button>
+                <button type="submit" form="edit-form" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold">Uložit záznam</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('vetcare_token');
+        let currentTableName = '';
+        let currentColumns = [];
+        let activeRowData = null;
+        let isCreateMode = false;
+
+        if (!token) window.location.href = 'index.html';
+
+        // 1. Načtení seznamu tabulek
+        async function loadTables() {
+            try {
+                const res = await fetch('/api/admin/db/tables', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const tables = await res.json();
+
+                const container = document.getElementById('tables-list');
+                container.innerHTML = tables.map(t => `
+                    <button onclick="selectTable('${t}')" class="w-full text-left px-3 py-2 text-xs font-mono font-semibold rounded-lg hover:bg-slate-700/60 transition flex items-center justify-between text-slate-300">
+                        <span><i class="fa-solid fa-table mr-2 text-slate-500"></i>${t}</span>
+                    </button>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // 2. Zobrazení dat vybrané tabulky
+        async function selectTable(tableName) {
+            currentTableName = tableName;
+            document.getElementById('active-table-title').textContent = tableName;
+            document.getElementById('table-header').classList.remove('hidden');
+
+            try {
+                const res = await fetch(`/api/admin/db/tables/${tableName}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                currentColumns = data.columns;
+                document.getElementById('row-count').textContent = `Záznamů: ${data.rows.length}`;
+                renderTable(data.columns, data.rows);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // 3. Vykreslení HTML tabulky
+        function renderTable(columns, rows) {
+            const container = document.getElementById('data-container');
+            if (rows.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-slate-500">Tabulka '${currentTableName}' neobsahuje žádné záznamy.</div>`;
+                return;
+            }
+
+            const pkCol = columns[0].COLUMN_NAME; // Předpoklad: první sloupec je primární klíč (ID)
+
+            let html = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900 border-b border-slate-700 text-slate-400 font-mono">
+                                <th class="p-3 text-center">Akce</th>
+                                ${columns.map(c => `<th class="p-3">${c.COLUMN_NAME}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700/50 font-mono">
+                            ${rows.map(row => `
+                                <tr class="hover:bg-slate-750/50">
+                                    <td class="p-2 text-center whitespace-nowrap space-x-1">
+                                        <button onclick='openEditModal(${JSON.stringify(row).replace(/'/g, "&apos;")})' class="p-1.5 bg-amber-500/20 text-amber-300 hover:bg-amber-500/40 rounded" title="Upravit">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        <button onclick="deleteRow('${pkCol}', '${row[pkCol]}')" class="p-1.5 bg-red-500/20 text-red-300 hover:bg-red-500/40 rounded" title="Smazat">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </td>
+                                    ${columns.map(c => `<td class="p-3 text-slate-300 max-w-xs truncate">${row[c.COLUMN_NAME] !== null ? row[c.COLUMN_NAME] : '<span class="text-slate-600 italic">NULL</span>'}</td>`).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            container.innerHTML = html;
+        }
+
+        // 4. Otevření modálu pro vytvoření nového záznamu
+        function openCreateModal() {
+            isCreateMode = true;
+            activeRowData = null;
+            document.getElementById('modal-title').innerHTML = `<i class="fa-solid fa-plus text-emerald-400"></i> Přidat nový záznam do ${currentTableName}`;
+            
+            const form = document.getElementById('edit-form');
+            form.innerHTML = currentColumns.map((col, index) => {
+                const isPk = index === 0;
+                return `
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">
+                            ${col.COLUMN_NAME} ${isPk ? '<span class="text-amber-400 font-normal lowercase">(PK - nechte prázdné pro auto-increment)</span>' : ''}
+                        </label>
+                        <input type="text" name="${col.COLUMN_NAME}" placeholder="${isPk ? 'Auto-increment' : ''}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono">
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        // 5. Otevření modálu pro úpravu záznamu
+        function openEditModal(row) {
+            isCreateMode = false;
+            activeRowData = row;
+            document.getElementById('modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-400"></i> Upravit záznam v ${currentTableName}`;
+            
+            const form = document.getElementById('edit-form');
+            form.innerHTML = currentColumns.map(col => {
+                const val = row[col.COLUMN_NAME] !== null ? row[col.COLUMN_NAME] : '';
+                return `
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">${col.COLUMN_NAME}</label>
+                        <input type="text" name="${col.COLUMN_NAME}" value="${val}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono">
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        // 6. Uložení úprav nebo nového záznamu
+        async function saveRowChanges(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const payload = {};
+            
+            formData.forEach((val, key) => {
+                // Pokud je hodnota prázdný řetězec, pošleme null (vyjma nového záznamu kde vynecháme prázdné PK)
+                if (val !== '') {
+                    payload[key] = val;
+                } else if (!isCreateMode) {
+                    payload[key] = null;
+                }
+            });
+
+            try {
+                let res;
+                if (isCreateMode) {
+                    // Vytvoření nového záznamu (POST)
+                    res = await fetch(`/api/admin/db/tables/${currentTableName}`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}` 
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    // Úprava stávajícího záznamu (PUT)
+                    const pkCol = currentColumns[0].COLUMN_NAME;
+                    const pkVal = activeRowData[pkCol];
+                    res = await fetch(`/api/admin/db/tables/${currentTableName}/${pkCol}/${pkVal}`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}` 
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                }
+
+                if (res.ok) {
+                    closeModal();
+                    selectTable(currentTableName);
+                } else {
+                    const err = await res.json();
+                    alert('Chyba uložení: ' + (err.error || 'Neznámá chyba'));
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // 7. Smazání řádku
+        async function deleteRow(pkCol, pkVal) {
+            if (!confirm(`Opravdu chcete smazat záznam kde ${pkCol} = ${pkVal}?`)) return;
+
+            try {
+                const res = await fetch(`/api/admin/db/tables/${currentTableName}/${pkCol}/${pkVal}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    selectTable(currentTableName);
+                } else {
+                    const err = await res.json();
+                    alert('Chyba při mazání: ' + err.error);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        loadTables();
+    </script>
+</body>
+</html>
